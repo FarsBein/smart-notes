@@ -211,10 +211,10 @@ ipcMain.on('save-note', (event, noteContent, attachments) => {
   attachments.forEach((attachment: Attachment, index: number) => {
     switch (attachment.type) {
       case 'url':
-        fullNoteContent += `[Attachment ${index + 1}](${attachment.content})\n`;
+        fullNoteContent += `[${attachment.content}](${attachment.content})\n`;
         break;
       case 'text':
-        fullNoteContent += `Attachment ${index + 1}:\n\`\`\`\n${attachment.content}\n\`\`\`\n`;
+        fullNoteContent += `>${attachment.content}\n`;
         break;
       case 'image':
         const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
