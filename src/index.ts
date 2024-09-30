@@ -1,7 +1,8 @@
-import { app, globalShortcut, BrowserWindow, Menu, screen, ipcMain } from 'electron';
+import { app, globalShortcut, BrowserWindow, Menu, screen, ipcMain, clipboard  } from 'electron';
 import { join } from 'path'
 import path from 'path';
 import * as fs from 'fs';
+import * as crypto from 'crypto';
 
 import { productName } from '../package.json';
 
@@ -29,7 +30,7 @@ const createWindow = (): void => {
     }
   });
 
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
 
   Menu.setApplicationMenu(null);
 
@@ -78,7 +79,7 @@ function createPopup() {
     },
   });
 
-  popupWindow.webContents.openDevTools();
+  // popupWindow.webContents.openDevTools();
 
   // Load the correct URL for the popup
   const popupUrl = new URL(MAIN_WINDOW_WEBPACK_ENTRY);
@@ -128,18 +129,123 @@ app.on('activate', () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
+// Clipboard recent history
+// todo: move to a global interface file
+interface ClipboardItem {
+  type: 'url' | 'image' | 'text' | 'none';
+  content: string;
+  timestamp: number;
+}
+
+let clipboardHistory: ClipboardItem[] = [];
+const CLIPBOARD_TIMEOUT = 15000; // 15 seconds
+
+function checkClipboard() {
+  const formats = clipboard.availableFormats();
+  let content: string | null = null;
+  let type: 'url' | 'image' | 'text' | 'none' = 'none';
+
+  if (formats.includes('text/plain')) {
+    const text = clipboard.readText();
+    if (text.startsWith('http://') || text.startsWith('https://')) {
+      type = 'url';
+      content = text;
+    } else {
+      type = 'text';
+      content = text;
+    }
+  } else if (formats.some(format => format.startsWith('image/'))) {
+    const image = clipboard.readImage();
+    if (!image.isEmpty()) {
+      type = 'image';
+      content = image.toPNG().toString('base64');
+    }
+  }
+
+  if (content !== null && type !== 'none') {
+    const newItem: ClipboardItem = { type, content, timestamp: Date.now() };
+    if (!clipboardHistory.some(item => item.content === content)) {
+      clipboardHistory.push(newItem);
+    }
+  }
+
+  // Remove old items
+  const now = Date.now();
+  clipboardHistory = clipboardHistory.filter(item => now - item.timestamp <= CLIPBOARD_TIMEOUT);
+}
+
+// Check clipboard every second
+setInterval(checkClipboard, 1000);
+
+ipcMain.on('get-recent-clipboard', (event) => {
+  const recentItems = clipboardHistory.filter(item => Date.now() - item.timestamp <= CLIPBOARD_TIMEOUT);
+  event.reply('recent-clipboard-content', recentItems);
+});
+
+
+// Check clipboard content
+ipcMain.on('check-clipboard', (event) => {
+  const formats = clipboard.availableFormats();
+  console.log('[index.ts] check-clipboard clipboard:', clipboard);
+  if (formats.includes('text/plain')) {
+    const text = clipboard.readText();
+    if (text.startsWith('http://') || text.startsWith('https://')) {
+      event.reply('clipboard-content', { type: 'url', content: text });
+    } else {
+      event.reply('clipboard-content', { type: 'text', content: text });
+    }
+  } else if (formats.some(format => format.startsWith('image/'))) {
+    const image = clipboard.readImage();
+    if (!image.isEmpty()) {
+      const pngBuffer = image.toPNG();
+      event.reply('clipboard-content', { type: 'image', content: pngBuffer.toString('base64') });
+    }
+  } else {
+    event.reply('clipboard-content', { type: 'none' });
+  }
+});
+
+// todo: move to a global interface file
+interface Attachment {
+  type: 'url' | 'image' | 'text' | 'none';
+  content: string;
+}
 
 // Save note to file
-ipcMain.on('save-note', (event, noteContent) => {
+ipcMain.on('save-note', (event, noteContent, attachments) => {
   const date = new Date();
   const fileName = `note-${date.toISOString().replace(/:/g, '-')}.md`;
-  const filePath = path.join(app.getPath('documents'), 'MyNotes', fileName);
+  const notesDir = path.join(app.getPath('documents'), 'MyNotes');
+  const filePath = path.join(notesDir, fileName);
+  const attachmentsDir = path.join(notesDir, 'attachments');
 
-  // Ensure the directory exists
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  // Ensure directories exist
+  fs.mkdirSync(notesDir, { recursive: true });
+  fs.mkdirSync(attachmentsDir, { recursive: true });
 
-  // Write the note content to the file
-  fs.writeFile(filePath, noteContent, (err) => {
+  let fullNoteContent = noteContent + '\n\n';
+
+  // Process attachments
+  attachments.forEach((attachment: Attachment, index: number) => {
+    switch (attachment.type) {
+      case 'url':
+        fullNoteContent += `[Attachment ${index + 1}](${attachment.content})\n`;
+        break;
+      case 'text':
+        fullNoteContent += `Attachment ${index + 1}:\n\`\`\`\n${attachment.content}\n\`\`\`\n`;
+        break;
+      case 'image':
+        const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
+        const imgFilePath = path.join(attachmentsDir, imgFileName);
+        fs.writeFileSync(imgFilePath, Buffer.from(attachment.content, 'base64'));
+        fullNoteContent += `![Image ${index + 1}](./attachments/${imgFileName})\n`;
+        break;
+      // Add cases for other file types as needed
+    }
+  });
+
+  // Write the full note content to the file
+  fs.writeFile(filePath, fullNoteContent, (err) => {
     if (err) {
       console.error('Failed to save note:', err);
       event.reply('save-note-result', { success: false, error: err.message });
