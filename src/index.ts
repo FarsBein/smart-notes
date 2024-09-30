@@ -187,28 +187,6 @@ ipcMain.on('get-recent-clipboard', (event) => {
 });
 
 
-// Check clipboard content
-ipcMain.on('check-clipboard', (event) => {
-  const formats = clipboard.availableFormats();
-  console.log('[index.ts] check-clipboard clipboard:', clipboard);
-  if (formats.includes('text/plain')) {
-    const text = clipboard.readText();
-    if (text.startsWith('http://') || text.startsWith('https://')) {
-      event.reply('clipboard-content', { type: 'url', content: text });
-    } else {
-      event.reply('clipboard-content', { type: 'text', content: text });
-    }
-  } else if (formats.some(format => format.startsWith('image/'))) {
-    const image = clipboard.readImage();
-    if (!image.isEmpty()) {
-      const pngBuffer = image.toPNG();
-      event.reply('clipboard-content', { type: 'image', content: pngBuffer.toString('base64') });
-    }
-  } else {
-    event.reply('clipboard-content', { type: 'none' });
-  }
-});
-
 // todo: move to a global interface file
 interface Attachment {
   type: 'url' | 'image' | 'text' | 'none';
@@ -222,7 +200,7 @@ ipcMain.on('save-note', (event, noteContent, attachments) => {
   const notesDir = path.join(app.getPath('documents'), 'MyNotes');
   const filePath = path.join(notesDir, fileName);
   const attachmentsDir = path.join(notesDir, 'attachments');
-
+  console.log('Saving note to notesDir:', notesDir);
   // Ensure directories exist
   fs.mkdirSync(notesDir, { recursive: true });
   fs.mkdirSync(attachmentsDir, { recursive: true });
@@ -242,7 +220,7 @@ ipcMain.on('save-note', (event, noteContent, attachments) => {
         const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
         const imgFilePath = path.join(attachmentsDir, imgFileName);
         fs.writeFileSync(imgFilePath, Buffer.from(attachment.content, 'base64'));
-        fullNoteContent += `![Image ${index + 1}](./attachments/${imgFileName})\n`;
+        fullNoteContent += `![Image ${index + 1}](${notesDir}\\attachments\\${imgFileName})\n`;
         break;
       // Add cases for other file types as needed
     }
