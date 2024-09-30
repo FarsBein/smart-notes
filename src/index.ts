@@ -27,6 +27,7 @@ const createWindow = (): void => {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       contextIsolation: true,
       nodeIntegration: false,
+      spellcheck: true,
     }
   });
 
@@ -76,8 +77,11 @@ function createPopup() {
       nodeIntegrationInSubFrames: false,
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       sandbox: false,
+      spellcheck: true,
     },
   });
+
+  popupWindow.webContents.session.setSpellCheckerLanguages(['en-US', 'en-CA']);
 
   // popupWindow.webContents.openDevTools();
 
@@ -138,7 +142,7 @@ interface ClipboardItem {
 }
 
 let clipboardHistory: ClipboardItem[] = [];
-const CLIPBOARD_TIMEOUT = 15000; // 15 seconds
+const CLIPBOARD_TIMEOUT = 5000; // 15 seconds
 
 function checkClipboard() {
   const formats = clipboard.availableFormats();
@@ -254,4 +258,11 @@ ipcMain.on('save-note', (event, noteContent, attachments) => {
       event.reply('save-note-result', { success: true, filePath });
     }
   });
+});
+
+// Close popup
+ipcMain.on('close-popup', () => {
+  if (popupWindow) {
+    popupWindow.close();
+  }
 });
