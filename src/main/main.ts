@@ -1,4 +1,4 @@
-import { app, globalShortcut, BrowserWindow, Menu, screen, ipcMain, clipboard  } from 'electron';
+import { app, globalShortcut, BrowserWindow, Menu, screen, ipcMain } from 'electron';
 import './ipc';
 
 import { productName } from '../../package.json';
@@ -34,7 +34,6 @@ const createWindow = (): void => {
 
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
-
 
   // Register the global shortcut
   globalShortcut.register('CommandOrControl+Shift+N', () => {
@@ -88,6 +87,36 @@ function createPopup() {
   console.log(`Navigating to http://localhost:3000/popup`);
   console.log(`> ${MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY}`);
   popupWindow.loadURL('http://localhost:3000/popup');
+
+
+  // Set up context menu
+  popupWindow.webContents.on('context-menu', (event, params) => {
+    const { misspelledWord, dictionarySuggestions } = params;
+
+    // Build a dynamic menu based on the context
+    const menuTemplate = [
+      ...(misspelledWord ? [
+        ...dictionarySuggestions.map(suggestion => ({
+          label: suggestion,
+          click: () => popupWindow.webContents.replaceMisspelling(suggestion),
+        })),
+        { type: 'separator' } // This is correctly typed as a separator
+      ] : []),
+      { role: 'copy' },
+      { role: 'paste' },
+      { role: 'cut' },
+      { role: 'selectAll' }
+    ];
+    // Build menu from template
+    const menu = Menu.buildFromTemplate(menuTemplate as (Electron.MenuItemConstructorOptions | Electron.MenuItem)[]);
+
+    // Popup the menu at the right-click location
+    menu.popup({
+      window: popupWindow,
+      x: params.x, // Get the X coordinate of the click
+      y: params.y  // Get the Y coordinate of the click
+    });
+  });
 
   // Wait for the window to be ready before showing it
   popupWindow.once('ready-to-show', () => {
