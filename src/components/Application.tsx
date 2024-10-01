@@ -1,13 +1,14 @@
 import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Popup from './Popup';
+import NotesFeed from './NotesFeed';
 
 
 const App: React.FC = () => {
   return (
     <div className="p-3">
-      <h1>Hello World!</h1>
-      <p>Welcome to your Electron application.</p>
+      <h1>My Memory</h1>
+      <NotesFeed />
     </div>
   );
 };

@@ -10,8 +10,16 @@ interface Attachment {
     content: string;
 }
 
+interface Note {
+    fileName: string;
+    content: string;
+    createdAt: string;
+    updatedAt: string;
+    attachments: string[];
+}
+
 // Save note to file
-ipcMain.on('save-note', (event, noteContent, attachments) => {
+ipcMain.on('save-note', (event, noteContent: string, attachments: Attachment[]) => {
     const currentDate = new Date();
     const year = String(currentDate.getFullYear()).slice(-2);
     const month = String(currentDate.getMonth() + 1).padStart(2, '0');
@@ -22,11 +30,7 @@ ipcMain.on('save-note', (event, noteContent, attachments) => {
     const milliseconds = String(currentDate.getMilliseconds()).padStart(3, '0');
     const fileName = `${year}${month}${day}-${hours}${minutes}${seconds}.md`;
 
-    const notesPath = path.join(
-        app.getPath('documents'),
-        'MyNotes',
-    );
-
+    const notesPath = path.join(app.getPath('documents'), 'MyNotes');
     const filePath = path.join(notesPath, fileName);
     const attachmentsDir = path.join(notesPath, 'attachments');
 
@@ -35,23 +39,22 @@ ipcMain.on('save-note', (event, noteContent, attachments) => {
     fs.mkdirSync(attachmentsDir, { recursive: true });
 
     // Process attachments
-    let attachmentsMetadata = '';
-    attachments.forEach((attachment: Attachment, index: number) => {
+    const attachmentsMetadata = attachments.map((attachment: Attachment) => {
         switch (attachment.type) {
             case 'url':
-                attachmentsMetadata += `${attachment.content}),`;
-                break;
+                return JSON.stringify(attachment.content);
             case 'text':
-                attachmentsMetadata += `"${attachment.content}",`;
-                break;
+                return JSON.stringify(attachment.content.replace(/\n/g, ''));
             case 'image':
                 const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
                 const imgFilePath = path.join(attachmentsDir, imgFileName);
                 fs.writeFileSync(imgFilePath, Buffer.from(attachment.content, 'base64'));
-                attachmentsMetadata += `${notesPath}\\attachments\\${imgFileName},`;
-                break;
+                // Use forward slashes and JSON.stringify to properly escape the path
+                return JSON.stringify(path.join(notesPath, 'attachments', imgFileName).replace(/\\/g, '/'));
+            default:
+                return '';
         }
-    });
+    }).filter(Boolean).join(',');
 
     let metadata = `---\n` +
         `createdAt: '${currentDate.toISOString()}'\n` +
@@ -59,7 +62,7 @@ ipcMain.on('save-note', (event, noteContent, attachments) => {
         `attachments: [${attachmentsMetadata}]\n` +
         `---\n`;
 
-    let fullNoteContent = metadata + noteContent ;
+    const fullNoteContent = metadata + noteContent;
 
     // Write the full note content to the file
     fs.writeFile(filePath, fullNoteContent, (err) => {
@@ -73,3 +76,51 @@ ipcMain.on('save-note', (event, noteContent, attachments) => {
     });
 });
 
+// Get notes
+ipcMain.on('get-notes', (event) => {
+    const notesPath = path.join(app.getPath('documents'), 'MyNotes');
+
+    fs.readdir(notesPath, (err, files) => {
+        if (err) {
+            console.error('Error reading notes directory:', err);
+            event.reply('notes-data', []);
+            return;
+        }
+
+        const markdownFiles = files.filter(file => file.endsWith('.md'));
+
+        const notesData: Note[] = markdownFiles.map((fileName) => {
+            const filePath = path.join(notesPath, fileName);
+            const content = fs.readFileSync(filePath, 'utf-8');
+
+            // Parse the frontmatter
+            const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
+            const match = content.match(frontmatterRegex);
+            const frontmatter = match ? match[1] : '';
+
+            const parsedFrontmatter = frontmatter.split('\n').reduce((acc: Record<string, string>, line) => {
+                const [key, value] = line.split(': ');
+                if (key && value) {
+                    acc[key.trim()] = value.trim().replace(/^['"]|['"]$/g, '');
+                }
+                return acc;
+            }, {});
+
+            const noteContent = content.replace(frontmatterRegex, '').trim();
+            console.log('parsedFrontmatter.attachments:', parsedFrontmatter.attachments);
+            return {
+                fileName,
+                content: noteContent,
+                createdAt: parsedFrontmatter.createdAt,
+                updatedAt: parsedFrontmatter.updatedAt,
+                attachments: parsedFrontmatter.attachments ?
+                    JSON.parse(parsedFrontmatter.attachments.replace(/([A-Za-z]:(?:\\|\/)[^"]+)\\(?=[^"]+)/g, '$1/')) :
+                    [], // replace backslashes with forward slashes only for paths
+            };
+        });
+
+        console.log('notesData:', notesData);
+
+        event.reply('notes-data', notesData);
+    });
+});

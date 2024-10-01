@@ -1,4 +1,4 @@
-import { app, globalShortcut, BrowserWindow, Menu, screen, ipcMain } from 'electron';
+import { app, globalShortcut, BrowserWindow, Menu, screen, ipcMain, protocol } from 'electron';
 import './ipc';
 
 import { productName } from '../../package.json';
@@ -18,8 +18,8 @@ const createWindow = (): void => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     title: `${productName} ${app.getVersion()}`,
-    minWidth: 1080,
-    minHeight: 720,
+    minWidth: 550,
+    minHeight: 750,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       contextIsolation: true,
@@ -28,7 +28,7 @@ const createWindow = (): void => {
     }
   });
 
-  // mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   Menu.setApplicationMenu(null);
 
