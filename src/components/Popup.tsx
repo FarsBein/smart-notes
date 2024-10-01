@@ -40,7 +40,7 @@ const Popup: React.FC = () => {
           // Close the window after a short delay
           setTimeout(() => {
             window.electron.ipcRenderer.send('close-popup');
-          }, 1000);
+          }, 500);
         } else {
           setSaveStatus(`Failed to save note: ${result.error || 'Unknown error'}`);
         }
@@ -57,9 +57,7 @@ const Popup: React.FC = () => {
   }, []);
 
   const handleSave = () => {
-    const currentTime = new Date().toLocaleString();
-    const noteWithTimestamp = `${currentTime}\n\n${note}`;
-    window.electron.ipcRenderer.send('save-note', noteWithTimestamp, attachments);
+    window.electron.ipcRenderer.send('save-note', note, attachments);
     setNote('');
     setAttachments([]);
   };

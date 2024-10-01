@@ -12,13 +12,14 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "paths": {
-      "*": ["../node_modules/*"],
-      "@/*": ["./*"],
-      "components/*": ["./components/*"],
-      "styles/*": ["./styles/*"]
+      "*": ["node_modules/*"],
+      "@/*": ["src/*"],
+      "components/*": ["src/components/*"],
+      "styles/*": ["src/styles/*"]
     },
     "jsx": "react-jsx",
-    "typeRoots": ["../node_modules/@types", "./"]
+    "typeRoots": ["node_modules/@types", "src/@types"]
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
