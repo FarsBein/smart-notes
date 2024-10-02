@@ -57,9 +57,16 @@ ipcMain.on('save-note', (event, noteContent: string, attachments: Attachment[]) 
     }).filter(Boolean).join(',');
 
     let metadata = `---\n` +
+        `title: '\n` +
         `createdAt: '${currentDate.toISOString()}'\n` +
         `updatedAt: '${currentDate.toISOString()}'\n` +
+        `highlight: null` +
+        `highlightColor: null\n` +
+        `tags: []\n` +
+        `replies: []\n` +
         `attachments: [${attachmentsMetadata}]\n` +
+        `isReply: true\n` +
+        `isAI: false\n` +
         `---\n`;
 
     const fullNoteContent = metadata + noteContent;
