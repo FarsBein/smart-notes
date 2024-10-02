@@ -49,8 +49,8 @@ ipcMain.on('save-note', (event, noteContent: string, attachments: Attachment[]) 
                 const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
                 const imgFilePath = path.join(attachmentsDir, imgFileName);
                 fs.writeFileSync(imgFilePath, Buffer.from(attachment.content, 'base64'));
-                // Use forward slashes and JSON.stringify to properly escape the path
-                return JSON.stringify(path.join(notesPath, 'attachments', imgFileName).replace(/\\/g, '/'));
+                // Use the custom safe-file protocol
+                return JSON.stringify(`safe-file://attachments/${imgFileName}`);
             default:
                 return '';
         }

@@ -27,7 +27,7 @@ const NotesFeed: React.FC = () => {
 
   return (
     <div className="notes-feed">
-      {notes.map((note, index) => (
+      {notes.slice().reverse().map((note, index) => (
         <div key={index} className="note-card">
           <h3>{note.fileName}</h3>
           <p>Created: {new Date(note.createdAt).toLocaleString()}</p>
@@ -36,7 +36,7 @@ const NotesFeed: React.FC = () => {
           <div className="attachments">
             {note.attachments.map((attachment, i) => {
               if (attachment.endsWith('.png') || attachment.endsWith('.jpg') || attachment.endsWith('.jpeg')) {
-                return <img key={i} src={`file://${attachment}`} alt="Attachment" />;
+                return <img key={i} src={attachment} alt="Attachment" />;
               } else {
                 return <blockquote key={i}>{attachment}</blockquote>;
               }

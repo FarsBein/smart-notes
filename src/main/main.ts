@@ -1,4 +1,7 @@
-import { app, globalShortcut, BrowserWindow, Menu, screen, ipcMain, protocol } from 'electron';
+import { app, globalShortcut, BrowserWindow, Menu, screen, ipcMain, protocol, session } from 'electron';
+import * as path from 'path';
+import * as url from 'url';
+
 import './ipc';
 
 import { productName } from '../../package.json';
@@ -27,6 +30,17 @@ const createWindow = (): void => {
       spellcheck: true,
     }
   });
+
+  if (process.env.NODE_ENV === 'development') {
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': ["default-src 'self' 'unsafe-inline' 'unsafe-eval' data:; img-src 'self' data: safe-file:; connect-src 'self' ws:;"]
+        }
+      });
+    });
+  }
 
   mainWindow.webContents.openDevTools();
 
@@ -137,7 +151,14 @@ function createPopup() {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
+app.on('ready', () => {
+  protocol.registerFileProtocol('safe-file', (request, callback) => {
+    const filePath = url.fileURLToPath('file://' + request.url.slice('safe-file://'.length));
+    callback({ path: path.normalize(`${app.getPath('documents')}/MyNotes/${filePath}`) });
+  });
+
+  createWindow();
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
