@@ -14,6 +14,7 @@ const NotesFeed: React.FC = () => {
 
   useEffect(() => {
     const handleNotesData = (notesData: Note[]) => {
+      console.log('get-notes notesData:', notesData);
       setNotes(notesData);
     };
 
@@ -25,7 +26,23 @@ const NotesFeed: React.FC = () => {
     };
   }, []);
 
+
+  useEffect(() => {
+    const handleSaveResult = (newNote: Note) => {
+      console.log('new-note:', newNote);
+      setNotes((prevNotes) => [...prevNotes, newNote]);
+    };
+
+    window.electron.ipcRenderer.on('new-note', handleSaveResult);
+
+    return () => {
+      window.electron.ipcRenderer.removeListener('new-note', handleSaveResult);
+    };
+  }, []);
+  
+
   return (
+    // TODO: append the notes in order of creation so you don't have to reverse
     <div className="notes-feed">
       {notes.slice().reverse().map((note, index) => (
         <div key={index} className="note-card">

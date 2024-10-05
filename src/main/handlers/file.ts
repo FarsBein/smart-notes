@@ -4,6 +4,8 @@ import fs from 'fs';
 import crypto from 'crypto';
 import { app } from 'electron';
 
+import {mainWindow} from '../main';
+
 // todo: move to a global interface file
 interface Attachment {
     type: 'url' | 'image' | 'text' | 'none';
@@ -39,7 +41,7 @@ ipcMain.on('save-note', (event, noteContent: string, attachments: Attachment[]) 
     fs.mkdirSync(attachmentsDir, { recursive: true });
 
     // Process attachments
-    const attachmentsMetadata = attachments.map((attachment: Attachment) => {
+    const processedAttachments = attachments.map((attachment: Attachment) => {
         switch (attachment.type) {
             case 'url':
                 return JSON.stringify(attachment.content);
@@ -64,7 +66,7 @@ ipcMain.on('save-note', (event, noteContent: string, attachments: Attachment[]) 
         `highlightColor: null\n` +
         `tags: []\n` +
         `replies: []\n` +
-        `attachments: [${attachmentsMetadata}]\n` +
+        `attachments: [${processedAttachments}]\n` +
         `isReply: true\n` +
         `isAI: false\n` +
         `---\n`;
@@ -78,12 +80,25 @@ ipcMain.on('save-note', (event, noteContent: string, attachments: Attachment[]) 
             event.reply('save-note-result', { success: false, error: err.message });
         } else {
             console.log('Note saved successfully:', filePath);
-            event.reply('save-note-result', { success: true, filePath });
+            event.reply('save-note-result', { success: true, filePath});
+            
+            // Trigger new-note event
+            const newNote: Note = {
+                fileName,
+                content: noteContent,
+                createdAt: currentDate.toISOString(),
+                updatedAt: currentDate.toISOString(),
+                attachments: processedAttachments ?
+                JSON.parse(processedAttachments.replace(/([A-Za-z]:(?:\\|\/)[^"]+)\\(?=[^"]+)/g, '$1/')) :
+                [], // replace backslashes with forward slashes only for paths
+            };
+            
+            mainWindow.webContents.send('new-note', newNote);
         }
     });
 });
 
-// Get notes
+// Get all notes
 ipcMain.on('get-notes', (event) => {
     const notesPath = path.join(app.getPath('documents'), 'MyNotes');
 
@@ -129,5 +144,48 @@ ipcMain.on('get-notes', (event) => {
         console.log('notesData:', notesData);
 
         event.reply('notes-data', notesData);
+    });
+});
+
+// Get single note
+ipcMain.on('get-note', (event, fileName: string) => {
+    const notesPath = path.join(app.getPath('documents'), 'MyNotes');
+    const filePath = path.join(notesPath, fileName);
+
+    fs.readFile(filePath, 'utf-8', (err, content) => {
+        if (err) {
+            console.error('Error reading note file:', err);
+            event.reply('note-data', null);
+            return;
+        }
+
+        // Parse the frontmatter
+        const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
+        const match = content.match(frontmatterRegex);
+        const frontmatter = match ? match[1] : '';
+
+        const parsedFrontmatter = frontmatter.split('\n').reduce((acc: Record<string, string>, line) => {
+            const [key, value] = line.split(': ');
+            if (key && value) {
+                acc[key.trim()] = value.trim().replace(/^['"]|['"]$/g, '');
+            }
+            return acc;
+        }, {});
+
+        const noteContent = content.replace(frontmatterRegex, '').trim();
+        // TODO: add the other meta data attributes to the note
+        const note: Note = {
+            fileName,
+            content: noteContent,
+            createdAt: parsedFrontmatter.createdAt,
+            updatedAt: parsedFrontmatter.updatedAt,
+            attachments: parsedFrontmatter.attachments ?
+                JSON.parse(parsedFrontmatter.attachments.replace(/([A-Za-z]:(?:\\|\/)[^"]+)\\(?=[^"]+)/g, '$1/')) :
+                [], // replace backslashes with forward slashes only for paths
+        };
+
+        console.log('single note:', note);
+
+        event.reply('note-data', note);
     });
 });

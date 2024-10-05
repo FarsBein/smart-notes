@@ -16,10 +16,10 @@ declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
-
+export let mainWindow: BrowserWindow | null = null;
 const createWindow = (): void => {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     title: `${productName} ${app.getVersion()}`,
     minWidth: 550,
     minHeight: 750,
@@ -42,7 +42,7 @@ const createWindow = (): void => {
     });
   }
 
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
 
   Menu.setApplicationMenu(null);
 
@@ -179,6 +179,8 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+
+// ipc operations related to the windows
 
 // Close popup
 ipcMain.on('close-popup', () => {
