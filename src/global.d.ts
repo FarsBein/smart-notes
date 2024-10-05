@@ -13,3 +13,34 @@ interface Window {
         };
     };
 }
+
+
+interface NoteMetadata {
+    fileName: string;
+    title: string;
+    createdAt: string;
+    updatedAt: string;
+    highlight: string | null;
+    highlightColor: string | null;
+    tags: string[];
+    replies: any[]; // define a more specific type for replies
+    attachments: string[];
+    isReply: boolean;
+    isAI: boolean;
+    filePath: string;
+}
+
+
+interface Attachment {
+    type: 'url' | 'image' | 'text' | 'none';
+    content: string;
+}
+
+
+interface Note {
+    fileName: string;
+    content: string;
+    createdAt: string;
+    updatedAt: string;
+    attachments: string[];
+}

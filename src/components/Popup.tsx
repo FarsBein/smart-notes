@@ -1,13 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../styles/global.scss';
 
-// todo: move this to a shared interface file
-interface Attachment {
-  type: 'url' | 'image' | 'text' | 'none';
-  content: string;
-  timestamp: number;
-}
-
 const Popup: React.FC = () => {
   const [note, setNote] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);

@@ -15,6 +15,8 @@ const App: React.FC = () => {
 
 
 const Application: React.FC = () => {
+  // find better routing solution (try hash again)
+
   console.log('[App] : rendering routes');
   const location = useLocation();
   console.log('[App] location:', location);

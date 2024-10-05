@@ -1,14 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
-interface Note {
-  fileName: string;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-  attachments: string[];
-}
-
 const NotesFeed: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
 
