@@ -94,8 +94,7 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
             } else {
                 console.log('Note saved successfully:', filePath);
                 
-                // add metadata to index
-                metadataIndex.addNoteWithEmbedding(metadata, embedding);
+                metadataIndex.addNote(metadata, embedding);
 
                 event.reply('save-note-result', { success: true, filePath });
                 
