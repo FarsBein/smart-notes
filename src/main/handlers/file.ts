@@ -6,6 +6,9 @@ import MetadataIndex from '../utils/MetaDataIndex';
 import { mainWindow } from '../main';
 
 const notesPath = path.join(app.getPath('documents'), 'MyNotes');
+
+const attachmentsDir = path.join(notesPath, 'attachments');
+
 const indexPath = path.join(notesPath, 'metadata_index.json');
 const metadataIndex = new MetadataIndex(indexPath);
 
@@ -21,9 +24,7 @@ ipcMain.on('save-note', (event, noteContent: string, attachments: Attachment[]) 
     const milliseconds = String(currentDate.getMilliseconds()).padStart(3, '0');
     const fileName = `${year}${month}${day}-${hours}${minutes}${seconds}.md`;
 
-    const notesPath = path.join(app.getPath('documents'), 'MyNotes');
     const filePath = path.join(notesPath, fileName);
-    const attachmentsDir = path.join(notesPath, 'attachments');
 
     // Ensure directories exist
     fs.mkdirSync(notesPath, { recursive: true });
@@ -41,7 +42,7 @@ ipcMain.on('save-note', (event, noteContent: string, attachments: Attachment[]) 
                 const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
                 const imgFilePath = path.join(attachmentsDir, imgFileName);
                 fs.writeFileSync(imgFilePath, Buffer.from(attachment.content, 'base64'));
-                return JSON.stringify(`safe-file://attachments/${imgFileName}`);
+                return JSON.stringify(imgFilePath);
             default:
                 return '';
         }

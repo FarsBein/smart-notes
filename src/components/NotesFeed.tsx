@@ -21,6 +21,7 @@ const NotesFeed: React.FC = () => {
 
   useEffect(() => {
     const handleSaveResult = (newNote: Note) => {
+      console.log('new-note:', newNote);
       setNotes((prevNotes) => [newNote, ...prevNotes]);
     };
 
@@ -32,6 +33,25 @@ const NotesFeed: React.FC = () => {
   }, []);
   
 
+  const renderAttachment = (attachment: string, index: number) => {
+    const parsedAttachment = JSON.parse(attachment);
+    if (parsedAttachment.startsWith('C:\\') && (parsedAttachment.endsWith('.png') || parsedAttachment.endsWith('.jpg') || parsedAttachment.endsWith('.jpeg'))) {
+      return (
+        <img 
+          key={index} 
+          src={`safe-file://${parsedAttachment}`} 
+          alt="Attachment" 
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+            console.error('Failed to load image:', parsedAttachment);
+          }}
+        />
+      );
+    } else {
+      return <blockquote key={index}>{parsedAttachment}</blockquote>;
+    }
+  };
+
   return (
     <div className="notes-feed">
       {notes.map((note, index) => (
@@ -41,13 +61,7 @@ const NotesFeed: React.FC = () => {
           <p>Updated: {new Date(note.updatedAt).toLocaleString()}</p>
           <ReactMarkdown>{note.content}</ReactMarkdown>
           <div className="attachments">
-            {note.attachments.map((attachment, i) => {
-              if (attachment.endsWith('.png') || attachment.endsWith('.jpg') || attachment.endsWith('.jpeg')) {
-                return <img key={i} src={attachment} alt="Attachment" />;
-              } else {
-                return <blockquote key={i}>{attachment}</blockquote>;
-              }
-            })}
+            {note.attachments.map((attachment, i) => renderAttachment(attachment, i))}
           </div>
         </div>
       ))}
