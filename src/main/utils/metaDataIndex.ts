@@ -1,12 +1,17 @@
 import fs from 'fs';
+import { cosineSimilarity } from '../utils/embeddings';
 
 class MetadataIndex {
     private indexPath: string;
+    private embeddingsPath: string;
     private index: NoteMetadata[];
+    private embeddings: Record<string, number[]>;
 
-    constructor(indexPath: string) {
+    constructor(indexPath: string, embeddingsPath: string) {
         this.indexPath = indexPath;
+        this.embeddingsPath = embeddingsPath;
         this.index = this.loadIndex();
+        this.embeddings = this.loadEmbeddings();
     }
 
     private loadIndex(): NoteMetadata[] {
@@ -19,6 +24,16 @@ class MetadataIndex {
         }
     }
 
+    private loadEmbeddings(): Record<string, number[]> {
+        try {
+            const data = fs.readFileSync(this.embeddingsPath, 'utf-8');
+            return JSON.parse(data);
+        } catch (error) {
+            console.error('Error loading embeddings:', error);
+            return {};
+        }
+    }
+
     private saveIndex(): void {
         try {
             fs.writeFileSync(this.indexPath, JSON.stringify(this.index, null, 2));
@@ -27,10 +42,25 @@ class MetadataIndex {
         }
     }
 
+    private saveEmbeddings(): void {
+        try {
+            fs.writeFileSync(this.embeddingsPath, JSON.stringify(this.embeddings, null, 2));
+        } catch (error) {
+            console.error('Error saving embeddings:', error);
+        }
+    }
+
+    //TODO: change to storing notes in obj of objs instead of array
     public addNote(metadata: NoteMetadata): void {
         // this.index.unshift(metadata); // O(N) speed moves the whole array gets worst with more notes
         this.index = [metadata, ...this.index]; // O(1) speed but worst memory consumption while processing
         this.saveIndex();
+    }
+
+    public addNoteWithEmbedding(metadata: NoteMetadata, embedding: number[]): void {
+        this.addNote(metadata);
+        this.embeddings[metadata.fileName] = embedding;
+        this.saveEmbeddings();
     }
 
     public updateNote(fileName: string, metadata: Partial<NoteMetadata>): void {
@@ -116,6 +146,26 @@ class MetadataIndex {
         });
 
         return metadata as NoteMetadata;
+    }
+
+    public getEmbedding(fileName: string): number[] | undefined {
+        return this.embeddings[fileName];
+    }
+
+    public searchSimilarNotes(queryEmbedding: number[], threshold: number = 0.8): NoteMetadata[] {
+        const similarNotes: NoteMetadata[] = [];
+
+        for (const [fileName, embedding] of Object.entries(this.embeddings)) {
+            const similarity = cosineSimilarity(queryEmbedding, embedding);
+            if (similarity >= threshold) {
+                const noteMetadata = this.getNoteMetadata(fileName);
+                if (noteMetadata) {
+                    similarNotes.push(noteMetadata);
+                }
+            }
+        }
+
+        return similarNotes;
     }
 }
 

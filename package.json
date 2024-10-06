@@ -53,8 +53,10 @@
   "license": "MIT",
   "dependencies": {
     "@types/react-router-dom": "^5.3.3",
+    "dotenv": "^16.4.5",
     "electron-context-menu": "^4.0.4",
     "electron-squirrel-startup": "^1.0.1",
+    "openai": "^4.67.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",

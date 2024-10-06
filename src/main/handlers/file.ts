@@ -4,108 +4,117 @@ import path from 'path';
 import crypto from 'crypto';
 import MetadataIndex from '../utils/metaDataIndex';
 import { mainWindow } from '../main';
+import { generateEmbedding } from '../utils/embeddings';
 
 const notesPath = path.join(app.getPath('documents'), 'MyNotes');
-
 const attachmentsDir = path.join(notesPath, 'attachments');
 
 const indexPath = path.join(notesPath, 'metadata_index.json');
-const metadataIndex = new MetadataIndex(indexPath);
+const embeddingsPath = path.join(notesPath, 'embeddings.json');
+const metadataIndex = new MetadataIndex(indexPath, embeddingsPath);
 
 // Save note to file
-ipcMain.on('save-note', (event, noteContent: string, attachments: Attachment[]) => {
-    const currentDate = new Date();
-    const year = String(currentDate.getFullYear()).slice(-2);
-    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const day = String(currentDate.getDate()).padStart(2, '0');
-    const hours = String(currentDate.getHours()).padStart(2, '0');
-    const minutes = String(currentDate.getMinutes()).padStart(2, '0');
-    const seconds = String(currentDate.getSeconds()).padStart(2, '0');
-    const milliseconds = String(currentDate.getMilliseconds()).padStart(3, '0');
-    const fileName = `${year}${month}${day}-${hours}${minutes}${seconds}.md`;
+ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachment[]) => {
+    try {
+        const currentDate = new Date();
+        const year = String(currentDate.getFullYear()).slice(-2);
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        const hours = String(currentDate.getHours()).padStart(2, '0');
+        const minutes = String(currentDate.getMinutes()).padStart(2, '0');
+        const seconds = String(currentDate.getSeconds()).padStart(2, '0');
+        const milliseconds = String(currentDate.getMilliseconds()).padStart(3, '0');
+        const fileName = `${year}${month}${day}-${hours}${minutes}${seconds}.md`;
 
-    const filePath = path.join(notesPath, fileName);
+        const filePath = path.join(notesPath, fileName);
 
-    // Ensure directories exist
-    fs.mkdirSync(notesPath, { recursive: true });
-    fs.mkdirSync(attachmentsDir, { recursive: true });
+        // Ensure directories exist
+        fs.mkdirSync(notesPath, { recursive: true });
+        fs.mkdirSync(attachmentsDir, { recursive: true });
 
-    // Process attachments
-    const processedAttachments = attachments.map((attachment: Attachment) => {
-        switch (attachment.type) {
-            case 'url':
-                return JSON.stringify(attachment.content);
-            case 'text':
-                // TODO: find a better way to handle new line in quotes attachments 
-                return JSON.stringify(attachment.content.replace(/\n/g, ''));
-            case 'image':
-                const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
-                const imgFilePath = path.join('attachments', imgFileName);
-                const normalizedImgPath = path.normalize(imgFilePath); // Normalize the path to remove any potential double slashes
-                fs.writeFileSync(path.join(attachmentsDir, imgFileName), Buffer.from(attachment.content, 'base64'));
-                const markdownImgPath = normalizedImgPath.split(path.sep).join('/'); // Ensure the path uses forward slashes for Markdown compatibility
-                return JSON.stringify(markdownImgPath);
-            default:
-                return '';
-        }
-    }).filter(Boolean); // Removes empty strings
+        // Process attachments
+        const processedAttachments = attachments.map((attachment: Attachment) => {
+            switch (attachment.type) {
+                case 'url':
+                    return JSON.stringify(attachment.content);
+                case 'text':
+                    // TODO: find a better way to handle new line in quotes attachments 
+                    return JSON.stringify(attachment.content.replace(/\n/g, ''));
+                case 'image':
+                    const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
+                    const imgFilePath = path.join('attachments', imgFileName);
+                    const normalizedImgPath = path.normalize(imgFilePath); // Normalize the path to remove any potential double slashes
+                    fs.writeFileSync(path.join(attachmentsDir, imgFileName), Buffer.from(attachment.content, 'base64'));
+                    const markdownImgPath = normalizedImgPath.split(path.sep).join('/'); // Ensure the path uses forward slashes for Markdown compatibility
+                    return JSON.stringify(markdownImgPath);
+                default:
+                    return '';
+            }
+        }).filter(Boolean); // Removes empty strings
 
-    const metadata: NoteMetadata = {
-        fileName,
-        title: '',
-        createdAt: currentDate.toISOString(),
-        updatedAt: currentDate.toISOString(),
-        highlight: null,
-        highlightColor: null,
-        tags: [],
-        replies: [],
-        attachments: processedAttachments,
-        isReply: true,
-        isAI: false,
-        filePath
-    };
+        const metadata: NoteMetadata = {
+            fileName,
+            title: '',
+            createdAt: currentDate.toISOString(),
+            updatedAt: currentDate.toISOString(),
+            highlight: null,
+            highlightColor: null,
+            tags: [],
+            replies: [],
+            attachments: processedAttachments,
+            isReply: true,
+            isAI: false,
+            filePath
+        };
 
-    // Generate frontmatter string 
-    const frontmatter = `---\n` +
-        `title: '${metadata.title}'\n` +
-        `createdAt: '${metadata.createdAt}'\n` +
-        `updatedAt: '${metadata.updatedAt}'\n` +
-        `highlight: ${metadata.highlight}\n` +
-        `highlightColor: ${metadata.highlightColor}\n` +
-        `tags: [${metadata.tags.join(', ')}]\n` +
-        `replies: [${metadata.replies.join(', ')}]\n` +
-        `attachments: [${metadata.attachments.join(', ')}]\n` +
-        `isReply: ${metadata.isReply}\n` +
-        `isAI: ${metadata.isAI}\n` +
-        `---\n`;
+        // generate embedding
+        const embedding = await generateEmbedding(noteContent);
 
-    const fullNoteContent = frontmatter + noteContent;
+        // Generate frontmatter string 
+        const frontmatter = `---\n` +
+            `title: '${metadata.title}'\n` +
+            `createdAt: '${metadata.createdAt}'\n` +
+            `updatedAt: '${metadata.updatedAt}'\n` +
+            `highlight: ${metadata.highlight}\n` +
+            `highlightColor: ${metadata.highlightColor}\n` +
+            `tags: [${metadata.tags.join(', ')}]\n` +
+            `replies: [${metadata.replies.join(', ')}]\n` +
+            `attachments: [${metadata.attachments.join(', ')}]\n` +
+            `isReply: ${metadata.isReply}\n` +
+            `isAI: ${metadata.isAI}\n` +
+            `---\n`;
 
-    // Write the full note content to the file
-    fs.writeFile(filePath, fullNoteContent, (err) => {
-        if (err) {
-            console.error('Failed to save note:', err);
-            event.reply('save-note-result', { success: false, error: err.message });
-        } else {
-            console.log('Note saved successfully:', filePath);
-            
-            // Add metadata to the index after successful file write
-            metadataIndex.addNote(metadata);
-            
-            event.reply('save-note-result', { success: true, filePath });
-            
-            // Trigger new-note event
-            const newNote: Note = {
-                fileName,
-                content: noteContent,
-                createdAt: currentDate.toISOString(),
-                updatedAt: currentDate.toISOString(),
-                attachments: processedAttachments
-            };
-            
-            mainWindow.webContents.send('new-note', newNote);
-        }
-    });
+        const fullNoteContent = frontmatter + noteContent;
+
+        // Write the full note content to the file
+        fs.writeFile(filePath, fullNoteContent, (err) => {
+            if (err) {
+                console.error('Failed to save note:', err);
+                event.reply('save-note-result', { success: false, error: err.message });
+            } else {
+                console.log('Note saved successfully:', filePath);
+                
+                // add metadata to index
+                metadataIndex.addNoteWithEmbedding(metadata, embedding);
+
+                event.reply('save-note-result', { success: true, filePath });
+                
+                // Trigger new-note event
+                const newNote: Note = {
+                    fileName,
+                    content: noteContent,
+                    createdAt: currentDate.toISOString(),
+                    updatedAt: currentDate.toISOString(),
+                    attachments: processedAttachments
+                };
+                
+                mainWindow.webContents.send('new-note', newNote);
+            }
+        });
+    } catch (error) {
+        console.error('Failed to save note with embedding:', error);
+        event.reply('save-note-result', { success: false, error: error.message });
+    }
 });
 
 // Get all notes
