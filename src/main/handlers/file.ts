@@ -40,13 +40,15 @@ ipcMain.on('save-note', (event, noteContent: string, attachments: Attachment[]) 
                 return JSON.stringify(attachment.content.replace(/\n/g, ''));
             case 'image':
                 const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
-                const imgFilePath = path.join(attachmentsDir, imgFileName);
-                fs.writeFileSync(imgFilePath, Buffer.from(attachment.content, 'base64'));
-                return JSON.stringify(imgFilePath);
+                const imgFilePath = path.join('attachments', imgFileName);
+                const normalizedImgPath = path.normalize(imgFilePath); // Normalize the path to remove any potential double slashes
+                fs.writeFileSync(path.join(attachmentsDir, imgFileName), Buffer.from(attachment.content, 'base64'));
+                const markdownImgPath = normalizedImgPath.split(path.sep).join('/'); // Ensure the path uses forward slashes for Markdown compatibility
+                return JSON.stringify(markdownImgPath);
             default:
                 return '';
         }
-    }).filter(Boolean); // filter(Boolean) for removing empty strings
+    }).filter(Boolean); // Removes empty strings
 
     const metadata: NoteMetadata = {
         fileName,

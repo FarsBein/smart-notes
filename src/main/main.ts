@@ -154,7 +154,7 @@ function createPopup() {
 app.on('ready', () => {
   protocol.registerFileProtocol('safe-file', (request, callback) => {
     const filePath = url.fileURLToPath('file://' + request.url.slice('safe-file://'.length));
-    callback({ path: path.normalize(filePath) });
+    callback({ path: path.normalize(`${app.getPath('documents')}/MyNotes/${filePath}`) });
   });
 
   createWindow();

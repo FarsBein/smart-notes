@@ -35,7 +35,7 @@ const NotesFeed: React.FC = () => {
 
   const renderAttachment = (attachment: string, index: number) => {
     const parsedAttachment = JSON.parse(attachment);
-    if (parsedAttachment.startsWith('C:\\') && (parsedAttachment.endsWith('.png') || parsedAttachment.endsWith('.jpg') || parsedAttachment.endsWith('.jpeg'))) {
+    if (parsedAttachment.startsWith('attachments/') && (parsedAttachment.endsWith('.png') || parsedAttachment.endsWith('.jpg') || parsedAttachment.endsWith('.jpeg'))) {
       return (
         <img 
           key={index} 
