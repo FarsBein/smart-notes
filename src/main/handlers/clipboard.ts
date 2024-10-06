@@ -1,7 +1,6 @@
 import { clipboard, ipcMain } from 'electron';
 
 // Clipboard recent history
-// todo: move to a global interface file
 interface ClipboardItem {
     type: 'url' | 'image' | 'text' | 'none';
     content: string;

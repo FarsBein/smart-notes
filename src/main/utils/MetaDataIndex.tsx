@@ -29,7 +29,8 @@ class MetadataIndex {
     }
 
     public addNote(metadata: NoteMetadata): void {
-        this.index.push(metadata);
+        // this.index.unshift(metadata); // O(N) speed moves the whole array gets worst with more notes
+        this.index = [metadata, ...this.index]; // O(1) speed but worst memory consumption while processing
         this.saveIndex();
     }
 
