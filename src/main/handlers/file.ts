@@ -118,7 +118,7 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
 
 // Get all notes
 ipcMain.on('get-notes', (event) => {
-    const notes = metadataIndex.getNotes();
+    const notes = metadataIndex.getNotesMetadata();
     const notesData: Note[] = notes.map(note => ({
         fileName: note.fileName,
         content: fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
@@ -129,6 +129,42 @@ ipcMain.on('get-notes', (event) => {
 
     console.log('notesData:', notesData);
     event.reply('notes-data', notesData);
+});
+
+
+// Delete note
+ipcMain.on('delete-note', (event, fileName: string) => {
+    try {
+        metadataIndex.deleteNote(fileName);
+        fs.unlinkSync(path.join(notesPath, fileName)); // Delete the file from the filesystem
+        event.reply('delete-note-result', { success: true, fileName });
+    } catch (error) {
+        console.error('Failed to delete note:', error);
+        event.reply('delete-note-result', { success: false, error: error.message });
+    }
+});
+
+// Update note
+ipcMain.on('update-note', async (event, fileName: string, newContent: string) => {
+    try {
+        const note = metadataIndex.getNoteMetadata(fileName);
+        if (!note) throw new Error('Note not found');
+        let fullNoteContent = fs.readFileSync(note.filePath, 'utf-8');
+        const oldContent = fullNoteContent.replace(/^---[\s\S]*?---/, '').trim()
+        
+        // Update the note content
+        const updatedAt = new Date().toISOString();
+        fullNoteContent = fullNoteContent.replace(oldContent, newContent);
+        fs.writeFileSync(note.filePath, fullNoteContent);
+
+        // Update metadata
+        metadataIndex.updateNoteMetadata(fileName, { updatedAt });
+
+        event.reply('update-note-result', { success: true, fileName, updatedAt });
+    } catch (error) {
+        console.error('Failed to update note:', error);
+        event.reply('update-note-result', { success: false, error: error.message });
+    }
 });
 
 // unused for now ----------------------------------------------------------------

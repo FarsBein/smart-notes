@@ -59,7 +59,7 @@ class MetadataIndex {
         this.saveEmbeddings();
     }
 
-    public updateNote(fileName: string, metadata: Partial<NoteMetadata>): void {
+    public updateNoteMetadata(fileName: string, metadata: Partial<NoteMetadata>): void {
         if (this.index[fileName]) {
             this.index[fileName] = { ...this.index[fileName], ...metadata }; // pretty neat way to update only the changed properties
             this.saveIndex();
@@ -73,8 +73,12 @@ class MetadataIndex {
         this.saveEmbeddings();
     }
     
-    public getNotes(): NoteMetadata[] {
+    public getNotesMetadata(): NoteMetadata[] {
         return Object.values(this.index).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    }
+
+    public getNoteMetadata(fileName: string): NoteMetadata | undefined {
+        return this.index[fileName];
     }
 
     public searchNotes(query: string): NoteMetadata[] {
@@ -83,10 +87,6 @@ class MetadataIndex {
             note.title.toLowerCase().includes(lowercaseQuery) ||
             note.tags.some(tag => tag.toLowerCase().includes(lowercaseQuery))
         );
-    }
-
-    public getNoteMetadata(fileName: string): NoteMetadata | undefined {
-        return this.index[fileName];
     }
 
     // unused for now ---------------------------------------------------------------
