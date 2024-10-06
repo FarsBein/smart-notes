@@ -2,7 +2,7 @@ import { ipcMain, app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import MetadataIndex from '../utils/MetaDataIndex';
+import MetadataIndex from '../utils/metaDataIndex';
 import { mainWindow } from '../main';
 
 const notesPath = path.join(app.getPath('documents'), 'MyNotes');
