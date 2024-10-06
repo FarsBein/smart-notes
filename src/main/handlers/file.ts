@@ -120,9 +120,10 @@ ipcMain.on('get-notes', (event) => {
     event.reply('notes-data', notesData);
 });
 
+// unused for now ----------------------------------------------------------------
 // Get single note
 ipcMain.on('get-note', (event, fileName: string) => {
-    const note = metadataIndex.getNoteByFileName(fileName);
+    const note = metadataIndex.getNoteMetadata(fileName);
     if (!note) {
         console.error('Note not found:', fileName);
         event.reply('note-data', null);

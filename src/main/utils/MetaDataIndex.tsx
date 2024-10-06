@@ -58,12 +58,19 @@ class MetadataIndex {
         );
     }
 
-    public getNoteByFileName(fileName: string): NoteMetadata | undefined {
+    public getNoteMetadata(fileName: string): NoteMetadata | undefined {
         return this.index.find(note => note.fileName === fileName);
     }
 
+    // unused for now ---------------------------------------------------------------
+    public getNoteContent(fileName: string): string | null {
+        const note = this.getNoteMetadata(fileName);
+        if (!note) return null;
+        return fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim();
+    }
+
     public toFrontmatterString(fileName: string): string | null {
-        const note = this.getNoteByFileName(fileName);
+        const note = this.getNoteMetadata(fileName);
         if (!note) return null;
 
         return `---\n` +
