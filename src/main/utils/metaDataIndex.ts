@@ -81,12 +81,22 @@ class MetadataIndex {
         return this.index[fileName];
     }
 
-    public searchNotes(query: string): NoteMetadata[] {
-        const lowercaseQuery = query.toLowerCase();
-        return Object.values(this.index).filter(note =>
-            note.title.toLowerCase().includes(lowercaseQuery) ||
-            note.tags.some(tag => tag.toLowerCase().includes(lowercaseQuery))
-        );
+    
+
+    public searchSimilarNotes(queryEmbedding: number[], threshold: number = 0.8): NoteMetadata[] {
+        const similarNotes: NoteMetadata[] = [];
+
+        for (const [fileName, embedding] of Object.entries(this.embeddings)) {
+            const similarity = cosineSimilarity(queryEmbedding, embedding);
+            if (similarity >= threshold) {
+                const noteMetadata = this.getNoteMetadata(fileName);
+                if (noteMetadata) {
+                    similarNotes.push(noteMetadata);
+                }
+            }
+        }
+
+        return similarNotes;
     }
 
     // unused for now ---------------------------------------------------------------
@@ -149,20 +159,12 @@ class MetadataIndex {
         return this.embeddings[fileName];
     }
 
-    public searchSimilarNotes(queryEmbedding: number[], threshold: number = 0.8): NoteMetadata[] {
-        const similarNotes: NoteMetadata[] = [];
-
-        for (const [fileName, embedding] of Object.entries(this.embeddings)) {
-            const similarity = cosineSimilarity(queryEmbedding, embedding);
-            if (similarity >= threshold) {
-                const noteMetadata = this.getNoteMetadata(fileName);
-                if (noteMetadata) {
-                    similarNotes.push(noteMetadata);
-                }
-            }
-        }
-
-        return similarNotes;
+    public searchTagsAndTitles(query: string): NoteMetadata[] {
+        const lowercaseQuery = query.toLowerCase();
+        return Object.values(this.index).filter(note =>
+            note.title.toLowerCase().includes(lowercaseQuery) ||
+            note.tags.some(tag => tag.toLowerCase().includes(lowercaseQuery))
+        );
     }
 }
 

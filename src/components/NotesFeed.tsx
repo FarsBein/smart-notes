@@ -3,13 +3,17 @@ import ReactMarkdown from 'react-markdown';
 
 const NotesFeed: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [filteredNotes, setFilteredNotes] = useState<Note[]>([]); // New state for filtered notes
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editContent, setEditContent] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchType, setSearchType] = useState<'semantic' | 'basic'>('semantic'); // New state for search type
 
   useEffect(() => {
     const handleNotesData = (notesData: Note[]) => {
       console.log('get-notes notesData:', notesData);
       setNotes(notesData);
+      setFilteredNotes(notesData); // Initialize filtered notes
     };
 
     window.electron.ipcRenderer.send('get-notes');
@@ -66,6 +70,23 @@ const NotesFeed: React.FC = () => {
     };
   }, [editContent]);
 
+  useEffect(() => {
+    const handleSearchResults = (result: { success: boolean, notesData?: Note[], error?: string }) => {
+      console.log('search-result:', result);
+      if (result.success) {
+        setFilteredNotes(result.notesData || []);
+      } else {
+        console.error('Error searching notes:', result.error);
+      }
+    };
+
+    window.electron.ipcRenderer.on('search-result', handleSearchResults);
+
+    return () => {
+      window.electron.ipcRenderer.removeListener('search-result', handleSearchResults);
+    };
+  }, []);
+
   const deleteNote = (fileName: string) => {
     window.electron.ipcRenderer.send('delete-note', fileName);
   };
@@ -98,9 +119,42 @@ const NotesFeed: React.FC = () => {
     }
   };
 
+  const handleSearch = () => {
+    if (searchType === 'semantic') {
+      window.electron.ipcRenderer.send('search-notes', searchQuery);
+    } else {
+      // Perform basic search locally
+      const lowerCaseQuery = searchQuery.toLowerCase();
+      const filtered = notes.filter(note =>
+        note.content.toLowerCase().includes(lowerCaseQuery)
+      );
+      setFilteredNotes(filtered);
+    }
+  };
+
+  const exitSearch = () => {
+    setSearchQuery('');
+    setFilteredNotes(notes); // Reset to original notes
+  };
+
   return (
     <div className="notes-feed">
-      {notes.map((note, index) => (
+      <div className="search-bar">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search notes..."
+          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+        />
+        <button onClick={handleSearch}>Search</button>
+        <button onClick={exitSearch}>Exit Search</button>
+        <select value={searchType} onChange={(e) => setSearchType(e.target.value as 'semantic' | 'basic')}>
+          <option value="semantic">Semantic Search</option>
+          <option value="basic">Basic Search</option>
+        </select>
+      </div>
+      {filteredNotes.map((note, index) => (
         <div key={index} className="note-card">
           <h3>{note.fileName}</h3>
           <p>Created: {new Date(note.createdAt).toLocaleString()}</p>

@@ -167,7 +167,26 @@ ipcMain.on('update-note', async (event, fileName: string, newContent: string) =>
     }
 });
 
-// unused for now ----------------------------------------------------------------
+
+// Search notes
+ipcMain.on('search-notes', async (event, searchQuery: string) => {
+    try {
+        const queryEmbedding = await generateEmbedding(searchQuery);
+        const similarNotes = metadataIndex.searchSimilarNotes(queryEmbedding);
+        const notesData: Note[] = similarNotes.map(note => ({
+            fileName: note.fileName,
+            content: fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
+            createdAt: note.createdAt,
+            updatedAt: note.updatedAt,
+            attachments: note.attachments
+        }));
+        event.reply('search-result', { success: true, notesData });
+    } catch (err) {
+        event.reply('search-result', { success: false, error: err.message });
+    }
+});
+
+// not used for now ----------------------------------------------------------------
 // Get single note
 ipcMain.on('get-note', (event, fileName: string) => {
     const note = metadataIndex.getNoteMetadata(fileName);

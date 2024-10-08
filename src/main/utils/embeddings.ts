@@ -3,12 +3,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Initialize OpenAI API client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY, // Ensure this is set in your environment
 });
 
-// TODO: add generateEmbedding message for the user
 export async function generateEmbedding(noteContent: string): Promise<number[]> {
   try {
     const response = await openai.embeddings.create({
@@ -27,6 +25,8 @@ export async function generateEmbedding(noteContent: string): Promise<number[]> 
   }
 }
 
+// returns a value between -1 and 1
+// better than euclidean/diffing distance because it takes the direction into account
 export function cosineSimilarity(vecA: number[], vecB: number[]): number {
     const dotProduct = vecA.reduce((sum, a, idx) => sum + a * vecB[idx], 0);
     const magnitudeA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
