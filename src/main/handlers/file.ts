@@ -52,6 +52,10 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
             }
         }).filter(Boolean); // Removes empty strings
 
+
+        // generate embedding
+        const embedding = await generateEmbedding(noteContent);
+
         const metadata: NoteMetadata = {
             fileName,
             title: '',
@@ -66,9 +70,6 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
             isAI: false,
             filePath
         };
-
-        // generate embedding
-        const embedding = await generateEmbedding(noteContent);
 
         // Generate frontmatter string 
         const frontmatter = `---\n` +
@@ -104,7 +105,8 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
                     content: noteContent,
                     createdAt: currentDate.toISOString(),
                     updatedAt: currentDate.toISOString(),
-                    attachments: processedAttachments
+                    attachments: processedAttachments,
+                    tags: []
                 };
                 
                 mainWindow.webContents.send('new-note', newNote);
@@ -124,7 +126,8 @@ ipcMain.on('get-notes', (event) => {
         content: fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
         createdAt: note.createdAt,
         updatedAt: note.updatedAt,
-        attachments: note.attachments
+        attachments: note.attachments,
+        tags: note.tags
     }));
 
     console.log('notesData:', notesData);
@@ -178,7 +181,8 @@ ipcMain.on('search-notes', async (event, searchQuery: string) => {
             content: fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
             createdAt: note.createdAt,
             updatedAt: note.updatedAt,
-            attachments: note.attachments
+            attachments: note.attachments,
+            tags: note.tags
         }));
         event.reply('search-result', { success: true, notesData });
     } catch (err) {
@@ -201,7 +205,8 @@ ipcMain.on('get-note', (event, fileName: string) => {
         content: fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
         createdAt: note.createdAt,
         updatedAt: note.updatedAt,
-        attachments: note.attachments
+        attachments: note.attachments,
+        tags: note.tags
     };
 
     console.log('single note:', noteData);

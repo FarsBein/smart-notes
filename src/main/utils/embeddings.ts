@@ -4,13 +4,13 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // Ensure this is set in your environment
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export async function generateEmbedding(noteContent: string): Promise<number[]> {
   try {
     const response = await openai.embeddings.create({
-      model: 'text-embedding-ada-002', // Use the appropriate model for embeddings
+      model: 'text-embedding-ada-002',
       input: noteContent,
     });
 

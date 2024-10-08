@@ -3,11 +3,11 @@ import ReactMarkdown from 'react-markdown';
 
 const NotesFeed: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
-  const [filteredNotes, setFilteredNotes] = useState<Note[]>([]); // New state for filtered notes
+  const [filteredNotes, setFilteredNotes] = useState<Note[]>([]); 
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editContent, setEditContent] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchType, setSearchType] = useState<'semantic' | 'basic'>('semantic'); // New state for search type
+  const [searchType, setSearchType] = useState<'semantic' | 'basic'>('semantic'); 
 
   useEffect(() => {
     const handleNotesData = (notesData: Note[]) => {
@@ -28,6 +28,7 @@ const NotesFeed: React.FC = () => {
     const handleSaveResult = (newNote: Note) => {
       console.log('new-note:', newNote);
       setNotes((prevNotes) => [newNote, ...prevNotes]);
+      setFilteredNotes((prevNotes) => [newNote, ...prevNotes]);
     };
 
     window.electron.ipcRenderer.on('new-note', handleSaveResult);
@@ -41,6 +42,7 @@ const NotesFeed: React.FC = () => {
     const handleDeleteResult = (result: { success: boolean, fileName?: string, error?: string }) => {
       if (result.success) {
         setNotes((prevNotes) => prevNotes.filter(note => note.fileName !== result.fileName));
+        setFilteredNotes((prevNotes) => prevNotes.filter(note => note.fileName !== result.fileName));
       } else {
         console.error('Failed to delete note:', result.error);
       }
@@ -57,6 +59,7 @@ const NotesFeed: React.FC = () => {
     const handleUpdateResult = (result: { success: boolean, fileName?: string, updatedAt?: string, error?: string }) => {
       if (result.success) {
         setNotes((prevNotes) => prevNotes.map(note => note.fileName === result.fileName ? { ...note, content: editContent, updatedAt: result.updatedAt } : note));
+        setFilteredNotes((prevNotes) => prevNotes.map(note => note.fileName === result.fileName ? { ...note, content: editContent, updatedAt: result.updatedAt } : note));
         setEditingNote(null);
       } else {
         console.error('Failed to update note:', result.error);
@@ -182,7 +185,9 @@ const NotesFeed: React.FC = () => {
           ) : (
             <ReactMarkdown>{note.content}</ReactMarkdown>
           )}
-
+          <div className="tags">
+            {note.tags.map((tag: string, i: number) => <span key={i}>{tag}</span>)}
+          </div>
           <div className="attachments">
             {note.attachments.map((attachment, i) => renderAttachment(attachment, i))}
           </div>

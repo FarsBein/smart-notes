@@ -40,6 +40,7 @@ interface Attachment {
 interface Note {
     fileName: string;
     content: string;
+    tags: string[];
     createdAt: string;
     updatedAt: string;
     attachments: string[];

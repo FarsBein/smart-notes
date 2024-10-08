@@ -42,7 +42,7 @@ const createWindow = (): void => {
     });
   }
 
-  // mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   Menu.setApplicationMenu(null);
 
