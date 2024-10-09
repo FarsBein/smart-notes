@@ -33,7 +33,15 @@ const Popup: FC = () => {
   const [note, setNote] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [saveStatus, setSaveStatus] = useState('');
+  const [tagInput, setTagInput] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const adjustTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  };
 
   useEffect(() => {
     const ipc = window.electron.ipcRenderer;
@@ -63,6 +71,9 @@ const Popup: FC = () => {
     ipc.on('recent-clipboard-content', handleRecentClipboardContent);
     ipc.on('save-note-result', handleSaveResult);
 
+    // Call adjustTextareaHeight on mount
+    adjustTextareaHeight();
+
     return () => {
       ipc.removeListener('recent-clipboard-content', handleRecentClipboardContent);
       ipc.removeListener('save-note-result', handleSaveResult);
@@ -80,7 +91,7 @@ const Popup: FC = () => {
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSave();
     } else if (e.key === 'Backspace' && e.shiftKey) {
@@ -89,6 +100,27 @@ const Popup: FC = () => {
     } else if (e.key === 'Escape') {
       e.preventDefault();
       window.electron.ipcRenderer.send('close-popup');
+    }
+  };
+
+  const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNote(e.target.value);
+    adjustTextareaHeight();
+  };
+
+  const handleTagInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.endsWith(' ')) {
+      // Split the input by spaces
+      const words = value.trim().split(/\s+/);
+      // Add '#' to the last word if it doesn't already start with '#'
+      words[words.length - 1] = words[words.length - 1].startsWith('#') 
+        ? words[words.length - 1] 
+        : '#' + words[words.length - 1];
+      // Join the words back together
+      setTagInput(words.join(' ') + ' ');
+    } else {
+      setTagInput(value);
     }
   };
 
@@ -102,7 +134,7 @@ const Popup: FC = () => {
         <textarea
           ref={textareaRef}
           value={note}
-          onChange={(e) => setNote(e.target.value)}
+          onChange={handleNoteChange}
           onKeyDown={handleKeyDown}
           placeholder="Capture your thoughts here…"
           spellCheck={true}
@@ -120,7 +152,13 @@ const Popup: FC = () => {
       <div className='popup-footer'>
         <div className='popup-footer-tag-container'>
           <img src={inbox} className='popup-footer-inbox' alt="inbox" />
-          <input className='popup-footer-tag' type="text" placeholder="#" />
+          <input 
+            className='popup-footer-tag' 
+            type="text" 
+            placeholder="#" 
+            value={tagInput}
+            onChange={handleTagInputChange}
+          />
         </div>
         <button onClick={handleSave}>Post</button>
         {saveStatus && <p>{saveStatus}</p>}
