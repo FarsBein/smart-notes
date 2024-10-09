@@ -93,7 +93,7 @@ function createPopup() {
 
   popupWindow.webContents.session.setSpellCheckerLanguages(['en-US', 'en-CA']);
 
-  // popupWindow.webContents.openDevTools();
+  popupWindow.webContents.openDevTools();
 
   // Load the correct URL for the popup
   const popupUrl = new URL(MAIN_WINDOW_WEBPACK_ENTRY);
@@ -137,11 +137,17 @@ function createPopup() {
     popupWindow.show();
   });
 
+  // Comment out the blur event handler for testing
+  /*
   popupWindow.on('blur', () => {
     if (popupWindow) {
       popupWindow.close();
     }
   });
+  */
+  
+  // Add this console log to remind you it's a temporary change
+  console.log('TESTING: popupWindow will remain open even when losing focus');
 
   popupWindow.on('closed', () => {
     popupWindow = null;
