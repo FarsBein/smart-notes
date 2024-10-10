@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, FC, KeyboardEvent } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import '../styles/global.scss';
-import inbox from '../assets/Inbox.png';
+import SearchDropdown from './SearchDropdown';
 
 const AttachmentItem: FC<{ attachment: Attachment; index: number; remove: (index: number) => void }> = ({ attachment, index, remove }) => (
   <div key={index}>
@@ -128,8 +128,8 @@ const Popup: FC = () => {
       // Split the input by spaces
       const words = value.trim().split(/\s+/);
       // Add '#' to the last word if it doesn't already start with '#'
-      words[words.length - 1] = words[words.length - 1].startsWith('#') 
-        ? words[words.length - 1] 
+      words[words.length - 1] = words[words.length - 1].startsWith('#')
+        ? words[words.length - 1]
         : '#' + words[words.length - 1];
       // Join the words back together
       setTagInput(words.join(' ') + ' ');
@@ -179,11 +179,8 @@ const Popup: FC = () => {
       </div>
       <div className="popup__footer">
         <div className="popup__left-container">
-          <div className="popup__sort-inbox">
-            <img src={inbox} className="popup__inbox-icon" alt="inbox" />
-            <div>Inbox</div>
-          </div>
-          <input 
+          <SearchDropdown />
+          <input
             className="popup__tag-input"
             type="text"
             placeholder="#"
