@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, FC, KeyboardEvent } from 'react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import '../styles/global.scss';
 import inbox from '../assets/Inbox.png';
 
@@ -29,12 +30,21 @@ const AttachmentItem: FC<{ attachment: Attachment; index: number; remove: (index
   </div>
 );
 
+// Define highlight options
+const highlightOptions = [
+  { name: 'None', color: '#3d3d3d' },
+  { name: 'Todo', color: '#FF5733' },
+  { name: 'Highlight', color: '#FFC300' },
+  { name: 'Idea', color: '#DAF7A6' },
+];
+
 const Popup: FC = () => {
   const [note, setNote] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [saveStatus, setSaveStatus] = useState('');
   const [tagInput, setTagInput] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [selectedHighlight, setSelectedHighlight] = useState(highlightOptions[0]);
 
   const adjustTextareaHeight = () => {
     if (textareaRef.current) {
@@ -86,6 +96,10 @@ const Popup: FC = () => {
     setAttachments([]);
   };
 
+  const handleCancel = () => {
+    window.electron.ipcRenderer.send('close-popup');
+  };
+
   const removeAttachment = (index: number) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
@@ -125,14 +139,37 @@ const Popup: FC = () => {
   };
 
   return (
-    <div className='popup'>
-      <div className='popup-header'>
-        <div className='popup-header-date'>{new Date().toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}</div>
+    <div className="popup">
+      <div className="popup__header">
+        <div className="popup__date">
+          {new Date().toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
+        </div>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <button className="popup__highlight" style={{ backgroundColor: selectedHighlight.color }}></button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content className="dropdown-menu-content">
+              {highlightOptions.map((option) => (
+                <DropdownMenu.Item
+                  key={option.name}
+                  className="dropdown-menu-item"
+                  onClick={() => setSelectedHighlight(option)}
+                >
+                  <div className="color-option">
+                    <div className="color-circle" style={{ backgroundColor: option.color }}></div>
+                    <span>{option.name}</span>
+                  </div>
+                </DropdownMenu.Item>
+              ))}
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
       </div>
-      <div className='popup-content'>
-        <div className='popup-content-highlight'></div>
+      <div className="popup__content">
         <textarea
           ref={textareaRef}
+          className="popup__textarea"
           value={note}
           onChange={handleNoteChange}
           onKeyDown={handleKeyDown}
@@ -140,29 +177,26 @@ const Popup: FC = () => {
           spellCheck={true}
         />
       </div>
-
-      {/* {attachments.map((attachment, index) => (
-        <AttachmentItem
-          key={index}
-          attachment={attachment}
-          index={index}
-          remove={removeAttachment}
-        />
-      ))} */}
-      <div className='popup-footer'>
-        <div className='popup-footer-tag-container'>
-          <img src={inbox} className='popup-footer-inbox' alt="inbox" />
+      <div className="popup__footer">
+        <div className="popup__left-container">
+          <div className="popup__sort-inbox">
+            <img src={inbox} className="popup__inbox-icon" alt="inbox" />
+            <div>Inbox</div>
+          </div>
           <input 
-            className='popup-footer-tag' 
-            type="text" 
-            placeholder="#" 
+            className="popup__tag-input"
+            type="text"
+            placeholder="#"
             value={tagInput}
             onChange={handleTagInputChange}
           />
         </div>
-        <button onClick={handleSave}>Post</button>
-        {saveStatus && <p>{saveStatus}</p>}
+        <div className="popup__buttons">
+          <button className="popup__post-btn" onClick={handleCancel}>Cancel</button>
+          <button className="popup__post-btn" onClick={handleSave}>Save</button>
+        </div>
       </div>
+      {saveStatus && <p>{saveStatus}</p>}
     </div>
   );
 };
