@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState } from 'react';
+import React, { ChangeEvent, useState, KeyboardEvent } from 'react';
 import { Image, Code, Quote } from 'lucide-react';
 import SearchDropdown from './SearchDropdown';
 import { usePopupContext } from '../context/PopupContext';
@@ -9,7 +9,7 @@ const Footer: React.FC = () => {
   const [tagInput, setTagInput] = useState('');
  
 
-  const handleTagInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTagInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value.endsWith(' ')) {
       // Split the input by spaces
@@ -22,6 +22,19 @@ const Footer: React.FC = () => {
       setTagInput(words.join(' ') + ' ');
     } else {
       setTagInput(value);
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Backspace' && e.shiftKey) {
+      e.preventDefault();
+      setAttachments([]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      window.electron.ipcRenderer.send('close-popup');
     }
   };
 
@@ -72,6 +85,7 @@ const Footer: React.FC = () => {
           placeholder="#"
           value={tagInput}
           onChange={handleTagInputChange}
+          onKeyDown={handleKeyDown}
         />
       </div>
       
