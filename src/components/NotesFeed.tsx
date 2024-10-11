@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import '../styles/global.scss';
 
 const NotesFeed: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);

@@ -93,7 +93,7 @@ body {
   }
 
   &__content {
-    margin-bottom: var(--spacing-4);
+    // margin-bottom: var(--spacing-4);
   }
 
   &__textarea {
@@ -171,14 +171,18 @@ body {
   }
 
   &__action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: none;
     border: none;
     cursor: pointer;
     color: var(--color-text-secondary);
     padding: 0;
     margin: 0;
+    margin-right: var(--spacing-3);
     &:hover {
-      color: var(--color-text-tertiary);
+      color: var(--color-text-primary);
     }
   }
 
@@ -191,12 +195,63 @@ body {
     font-size: var(--font-size-sm);
     border: none;
     cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 
-    &:hover {
+    &:hover:not(:disabled) {
       color: var(--color-text-primary);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
     }
   }
 }
+
+
+
+.saving-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  .saving-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    border-radius: 40px;
+    border: 1px solid var(--color-border);
+    padding: 0 var(--spacing-4);
+  }
+
+  .loading-icon {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+}
+
+
+.save-status-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  .save-status-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    border-radius: 40px;
+    border: 1px solid var(--color-border);
+    padding: 0 var(--spacing-4);
+  }
+}
+
 
 .dropdown-menu-content {
   min-width: 150px;
@@ -249,7 +304,7 @@ body {
     left: 0;
     margin-top: var(--spacing-1);
     background-color: var(--color-background-primary);
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--border-radius-md);
     overflow: hidden;
     box-shadow: 0px 10px 38px -10px rgba(22, 23, 24, 0.35), 0px 10px 20px -15px rgba(22, 23, 24, 0.2);
     border: 1px solid var(--color-border);
@@ -306,8 +361,6 @@ body {
     }
   }
 }
-
-
 
 .attachments {
   display: flex;
