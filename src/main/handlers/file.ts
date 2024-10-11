@@ -41,10 +41,11 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
                     // TODO: find a better way to handle new line in quotes attachments 
                     return JSON.stringify(attachment.content.replace(/\n/g, ''));
                 case 'image':
+                    const imgContentBase64Data  = attachment.content.replace(/^data:image\/png;base64,/, "");
                     const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
                     const imgFilePath = path.join('attachments', imgFileName);
                     const normalizedImgPath = path.normalize(imgFilePath); // Normalize the path to remove any potential double slashes
-                    fs.writeFileSync(path.join(attachmentsDir, imgFileName), Buffer.from(attachment.content, 'base64'));
+                    fs.writeFileSync(path.join(attachmentsDir, imgFileName), Buffer.from(imgContentBase64Data, 'base64'));
                     const markdownImgPath = normalizedImgPath.split(path.sep).join('/'); // Ensure the path uses forward slashes for Markdown compatibility
                     return JSON.stringify(markdownImgPath);
                 default:

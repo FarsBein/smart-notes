@@ -98,8 +98,6 @@ function createPopup() {
   // Load the correct URL for the popup
   const popupUrl = new URL(MAIN_WINDOW_WEBPACK_ENTRY);
   popupUrl.searchParams.set('view', 'popup'); // Use a query parameter instead of hash
-  console.log(`Navigating to http://localhost:3000/popup`);
-  console.log(`> ${MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY}`);
   popupWindow.loadURL('http://localhost:3000/popup');
 
 

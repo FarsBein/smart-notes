@@ -14,6 +14,9 @@ const TextArea: React.FC = () => {
   };
 
   useEffect(() => {
+    // Auto-focus on the textarea when the component mounts
+    textareaRef.current?.focus();
+    
     adjustTextareaHeight();
   }, [note]);
 

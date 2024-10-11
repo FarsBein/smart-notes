@@ -85,6 +85,7 @@ const Footer: React.FC = () => {
           placeholder="#"
           value={tagInput}
           onChange={handleTagInputChange}
+          // @ts-ignore
           onKeyDown={handleKeyDown}
         />
       </div>
