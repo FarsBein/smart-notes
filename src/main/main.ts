@@ -66,8 +66,8 @@ function createPopup() {
   const cursor = screen.getCursorScreenPoint();
   const currentDisplay = screen.getDisplayNearestPoint(cursor);
 
-  const width = 600;
-  const height = 400;
+  const width = 700;
+  const height = 700;
 
   const x = currentDisplay.bounds.x + Math.round((currentDisplay.bounds.width - width) / 2);
   const y = currentDisplay.bounds.y + Math.round((currentDisplay.bounds.height - height) / 2);
@@ -93,7 +93,7 @@ function createPopup() {
 
   popupWindow.webContents.session.setSpellCheckerLanguages(['en-US', 'en-CA']);
 
-  // popupWindow.webContents.openDevTools();
+  popupWindow.webContents.openDevTools();
 
   // Load the correct URL for the popup
   const popupUrl = new URL(MAIN_WINDOW_WEBPACK_ENTRY);

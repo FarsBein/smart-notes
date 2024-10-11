@@ -32,7 +32,7 @@ interface NoteMetadata {
 
 
 interface Attachment {
-    type: 'url' | 'image' | 'text' | 'none';
+    type: 'url' | 'image' | 'text' | 'code' | 'quote' | 'none';
     content: string;
 }
 

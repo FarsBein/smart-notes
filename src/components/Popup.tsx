@@ -1,36 +1,10 @@
-import React, { useState, useEffect, useRef, FC, KeyboardEvent } from 'react';
+import React, { useState, useEffect, useRef, FC, KeyboardEvent, ChangeEvent, ClipboardEvent, DragEvent } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import '../styles/global.scss';
 import SearchDropdown from './SearchDropdown';
+import AttachmentInput from './AttachmentInput';
+import { X, Paperclip, Code, Image, Quote } from 'lucide-react';
 
-const AttachmentItem: FC<{ attachment: Attachment; index: number; remove: (index: number) => void }> = ({ attachment, index, remove }) => (
-  <div key={index}>
-    {attachment.type === 'url' && (
-      <div>
-        Attached URL: {attachment.content}{' '}
-        <button onClick={() => remove(index)}>X</button>
-      </div>
-    )}
-    {attachment.type === 'image' && (
-      <div>
-        <img
-          src={`data:image/png;base64,${attachment.content}`}
-          alt="Clipboard"
-          style={{ maxWidth: '200px' }}
-        />
-        <button onClick={() => remove(index)}>X</button>
-      </div>
-    )}
-    {attachment.type === 'text' && (
-      <div>
-        Attached Text: {attachment.content.substring(0, 50)}...{' '}
-        <button onClick={() => remove(index)}>X</button>
-      </div>
-    )}
-  </div>
-);
-
-// Define highlight options
 const highlightOptions = [
   { name: 'None', color: '#3d3d3d' },
   { name: 'Todo', color: '#FF5733' },
@@ -100,10 +74,6 @@ const Popup: FC = () => {
     window.electron.ipcRenderer.send('close-popup');
   };
 
-  const removeAttachment = (index: number) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
-  };
-
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -138,8 +108,110 @@ const Popup: FC = () => {
     }
   };
 
+  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const newAttachment: Attachment = {
+          type: 'image',
+          content: event.target?.result as string,
+        };
+        setAttachments([...attachments, newAttachment]);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCodeSnippet = () => {
+    const code = prompt('Enter your code snippet:');
+    if (code) {
+      const newAttachment: Attachment = {
+        type: 'code',
+        content: code,
+      };
+      setAttachments([...attachments, newAttachment]);
+    }
+  };
+
+  const handleQuote = () => {
+    const quote = prompt('Enter your quote:');
+    if (quote) {
+      const newAttachment: Attachment = {
+        type: 'quote',
+        content: quote,
+      };
+      setAttachments([...attachments, newAttachment]);
+    }
+  };
+
+  const handlePaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData.items;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.indexOf('image') !== -1) {
+        e.preventDefault();
+        const blob = item.getAsFile();
+        if (blob) handleImageFile(blob);
+      } else if (item.type === 'text/plain') {
+        item.getAsString((string) => {
+          if (isValidUrl(string)) {
+            e.preventDefault();
+            addAttachment('url', string);
+          }
+        });
+      }
+    }
+  };
+
+  const handleImageFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      addAttachment('image', event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const addAttachment = (type: Attachment['type'], content: string) => {
+    const newAttachment: Attachment = { type, content };
+    setAttachments([...attachments, newAttachment]);
+  };
+
+  const isValidUrl = (string: string) => {
+    try {
+      new URL(string);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const items = e.dataTransfer.items;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.indexOf('image') !== -1) {
+        const file = item.getAsFile();
+        if (file) handleImageFile(file);
+      } else if (item.type === 'text/plain') {
+        item.getAsString((string) => {
+          if (isValidUrl(string)) {
+            addAttachment('url', string);
+          }
+        });
+      }
+    }
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
   return (
-    <div className="popup">
+    <div className="popup" onDrop={handleDrop} onDragOver={handleDragOver}>
       <div className="popup__header">
         <div className="popup__date">
           {new Date().toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
@@ -173,10 +245,12 @@ const Popup: FC = () => {
           value={note}
           onChange={handleNoteChange}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           placeholder="Capture your thoughts here…"
           spellCheck={true}
         />
       </div>
+      <AttachmentInput attachments={attachments} setAttachments={setAttachments} />
       <div className="popup__footer">
         <div className="popup__left-container">
           <SearchDropdown />
@@ -188,7 +262,26 @@ const Popup: FC = () => {
             onChange={handleTagInputChange}
           />
         </div>
+        
         <div className="popup__buttons">
+          <div className="popup__actions">
+            <label htmlFor="image-upload" className="popup__action-btn">
+              <Image size={20} />
+              <input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{ display: 'none' }}
+              />
+            </label>
+            <button onClick={handleCodeSnippet} className="popup__action-btn">
+              <Code size={20} />
+            </button>
+            <button onClick={handleQuote} className="popup__action-btn">
+              <Quote size={20} />
+            </button>
+          </div>
           <button className="popup__post-btn" onClick={handleCancel}>Cancel</button>
           <button className="popup__post-btn" onClick={handleSave}>Save</button>
         </div>

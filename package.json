@@ -58,6 +58,7 @@
     "electron-context-menu": "^4.0.4",
     "electron-squirrel-startup": "^1.0.1",
     "file-loader": "^6.2.0",
+    "lucide-react": "^0.451.0",
     "openai": "^4.67.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

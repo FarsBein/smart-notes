@@ -133,10 +133,15 @@ body {
     background-color: var(--color-background-secondary);
     padding: 0.20rem 0.45rem;
     border-radius: var(--border-radius-sm);
-
+    border: 1px solid transparent;
+    cursor: pointer;
     //not working
     &:focus {
       outline: 2px solid #f9f9f9;
+    }
+
+    &:hover {
+      border: 1px solid var(--color-border);
     }
   }
 
@@ -151,12 +156,30 @@ body {
     color: var(--color-text-secondary);
     border: none;
     font-size: var(--font-size-base);
-    font-weight: var(--font-weight-regular);
   }
 
   &__buttons {
     display: flex;
     gap: var(--spacing-2);
+  }
+
+  &__actions {
+    display: flex;
+    gap: 12px;
+    padding: 0;
+    margin: 0;
+  }
+
+  &__action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    padding: 0;
+    margin: 0;
+    &:hover {
+      color: var(--color-text-tertiary);
+    }
   }
 
   &__post-btn {
@@ -265,7 +288,9 @@ body {
         font-size: var(--font-size-sm);
         line-height: 1;
         margin: var(--spacing-1) 0;
-        &:hover, &.selected {
+
+        &:hover,
+        &.selected {
           background-color: var(--color-background-secondary);
         }
 
@@ -281,3 +306,92 @@ body {
     }
   }
 }
+
+
+
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  width: 100%;
+
+  .attachment {
+    position: relative;
+    max-width: 100%;
+
+    img {
+      max-width: 100%;
+      border-radius: 8px;
+    }
+
+    .code-snippet {
+      background-color: var(--color-background-secondary);
+      padding: 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    blockquote {
+      border-left: 3px solid var(--color-text-primary);
+      padding-left: 8px;
+      margin: 0;
+      font-style: italic;
+    }
+
+    .image-attachment {
+      .delete-btn {
+        position: absolute;
+        top: 15px;
+        right: 5px;
+        height: 26px;
+        width: 26px;
+        background-color: var(--color-text-secondary);
+        border: none;
+        border-radius: 50%;
+        color: var(--color-text-primary);
+        padding: 4px;
+        cursor: pointer;
+  
+        &:hover {
+          background-color: var(--color-accent);
+        }
+      }
+    }
+
+    .url-attachment {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-2);
+      width: 100%;
+      border-radius: var(--border-radius-xl);
+      border: 1px solid var(--color-border);
+      padding: var(--spacing-1) var(--spacing-2);
+      font-size: var(--font-size-sm);
+
+      .delete-btn {
+        height: 23px;
+        width: 23px;
+        background-color: transparent;
+        border: none;
+        border-radius: 50%;
+        color: var(--color-text-primary);
+        padding: var(--spacing-1);
+        cursor: pointer;
+
+        &:hover {
+          background-color: var(--color-accent);
+        }
+  
+      }
+
+      &:hover {
+        background-color: var(--color-background-secondary);
+      }
+    }
+  }
+}
+
