@@ -6,10 +6,7 @@ import NotesFeed from '../pages/NotesFeed/Index';
 
 const App: React.FC = () => {
   return (
-    <div>
-      <h1>My Memory</h1>
       <NotesFeed />
-    </div>
   );
 };
 

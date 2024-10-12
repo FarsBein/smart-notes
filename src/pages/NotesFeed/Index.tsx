@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import styles from './NotesFeed.module.scss';
 
+
 const NotesFeed: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
-  const [filteredNotes, setFilteredNotes] = useState<Note[]>([]); 
+  const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editContent, setEditContent] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchType, setSearchType] = useState<'semantic' | 'basic'>('semantic'); 
+  const [searchType, setSearchType] = useState<'semantic' | 'basic'>('semantic');
 
   useEffect(() => {
     const handleNotesData = (notesData: Note[]) => {
@@ -108,10 +109,10 @@ const NotesFeed: React.FC = () => {
     const parsedAttachment = JSON.parse(attachment);
     if (parsedAttachment.startsWith('attachments/') && (parsedAttachment.endsWith('.png') || parsedAttachment.endsWith('.jpg') || parsedAttachment.endsWith('.jpeg'))) {
       return (
-        <img 
-          key={index} 
-          src={`safe-file://${parsedAttachment}`} 
-          alt="Attachment" 
+        <img
+          key={index}
+          src={`safe-file://${parsedAttachment}`}
+          alt="Attachment"
           onError={(e) => {
             e.currentTarget.style.display = 'none';
             console.error('Failed to load image:', parsedAttachment);
@@ -142,7 +143,7 @@ const NotesFeed: React.FC = () => {
   };
 
   return (
-    <div className={styles['notes-feed']}>
+    <div className={styles['notes-container-wrapper']}>
       <div className={styles['search-bar']}>
         <input
           type="text"
@@ -159,43 +160,57 @@ const NotesFeed: React.FC = () => {
         </select>
       </div>
       {filteredNotes.map((note, index) => (
-        <div key={index} className={styles['note-card']}>
-          <h3>{note.fileName}</h3>
-          <p>Created: {new Date(note.createdAt).toLocaleString()}</p>
-          <p>Updated: {new Date(note.updatedAt).toLocaleString()}</p>
-
-          <div>
-            <button onClick={() => deleteNote(note.fileName)}>Delete</button>
-            {editingNote === note.fileName ? (
-              <>
-                <button onClick={() => saveEdit(note.fileName)}>Save</button>
-                <button onClick={() => setEditingNote(null)}>Cancel</button>
-              </>
-            ) : (
-              <button onClick={() => startEditing(note.fileName, note.content)}>Edit</button>
+        <>
+          <div className={styles['notes-container']} key={index}>
+          <div className={styles['note-legend']}>
+            <div className={styles['note-legend-dot']} />
+            {/* <div className={styles['note-legend-line']} /> */}
+          </div>
+          <div className={styles['note-content']}>
+            
+            <div className={styles['note-content-text']}>
+              {editingNote === note.fileName ? (
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  rows={10}
+                  cols={50}
+                />
+              ) : (
+                <ReactMarkdown>{note.content}</ReactMarkdown>
+              )}
+            </div>
+            {note.attachments && note.attachments.length > 0 && (
+              <div className={styles['note-attachments-container']}>
+                {note.attachments.map((attachment, i) => renderAttachment(attachment, i))}
+              </div>
             )}
-          </div>
-
-          {editingNote === note.fileName ? (
-            <textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              rows={10}
-              cols={50}
-            />
-          ) : (
-            <ReactMarkdown>{note.content}</ReactMarkdown>
-          )}
-          <div className={styles['tags']}>
-            {note.tags.map((tag: string, i: number) => <span key={i}>{tag}</span>)}
-          </div>
-          <div className={styles['attachments']}>
-            {note.attachments.map((attachment, i) => renderAttachment(attachment, i))}
+            <div className={styles['note-tags-container']}>
+              {note.tags && note.tags.length > 0 && (
+                <div>{note.tags.map((tag: string, i: number) => <span key={i}>{tag}</span>)}</div>
+              )}
+              <div>{new Date(note.updatedAt).toLocaleString()}</div>
+            </div>
+            <div>
+              <button onClick={() => deleteNote(note.fileName)}>Delete</button>
+              {editingNote === note.fileName ? (
+                <>
+                  <button onClick={() => saveEdit(note.fileName)}>Save</button>
+                  <button onClick={() => setEditingNote(null)}>Cancel</button>
+                </>
+              ) : (
+                <button onClick={() => startEditing(note.fileName, note.content)}>Edit</button>
+              )}
+            </div>
           </div>
         </div>
+        <div className={styles['note-divider']}></div>
+        </>
       ))}
     </div>
   );
 };
 
 export default NotesFeed;
+
+

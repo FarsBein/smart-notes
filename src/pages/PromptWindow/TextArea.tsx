@@ -38,7 +38,6 @@ const TextArea: React.FC = () => {
   };
 
   const handlePaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
-    e.preventDefault();
     const items = e.clipboardData.items;
 
     handleClipboard(items);
