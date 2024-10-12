@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import '../styles/global.scss';
+import styles from './NotesFeed.module.scss';
 
 const NotesFeed: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -142,8 +142,8 @@ const NotesFeed: React.FC = () => {
   };
 
   return (
-    <div className="notes-feed">
-      <div className="search-bar">
+    <div className={styles['notes-feed']}>
+      <div className={styles['search-bar']}>
         <input
           type="text"
           value={searchQuery}
@@ -159,7 +159,7 @@ const NotesFeed: React.FC = () => {
         </select>
       </div>
       {filteredNotes.map((note, index) => (
-        <div key={index} className="note-card">
+        <div key={index} className={styles['note-card']}>
           <h3>{note.fileName}</h3>
           <p>Created: {new Date(note.createdAt).toLocaleString()}</p>
           <p>Updated: {new Date(note.updatedAt).toLocaleString()}</p>
@@ -186,10 +186,10 @@ const NotesFeed: React.FC = () => {
           ) : (
             <ReactMarkdown>{note.content}</ReactMarkdown>
           )}
-          <div className="tags">
+          <div className={styles['tags']}>
             {note.tags.map((tag: string, i: number) => <span key={i}>{tag}</span>)}
           </div>
-          <div className="attachments">
+          <div className={styles['attachments']}>
             {note.attachments.map((attachment, i) => renderAttachment(attachment, i))}
           </div>
         </div>

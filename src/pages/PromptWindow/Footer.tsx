@@ -1,8 +1,8 @@
 import React, { ChangeEvent, useState, KeyboardEvent } from 'react';
 import { Image, Code, Quote } from 'lucide-react';
 import SearchDropdown from './SearchDropdown';
-import { usePopupContext } from '../context/PopupContext';
-import { Loader2 } from 'lucide-react';
+import { usePopupContext } from '../../context/PopupContext';
+import styles from './PromptWindow.module.scss';
 
 const Footer: React.FC = () => {
   const { handleSave, handleCancel, setAttachments, attachments, saveStatus } = usePopupContext();
@@ -76,11 +76,11 @@ const Footer: React.FC = () => {
   };
 
   return (
-    <div className="popup__footer">
-      <div className="popup__left-container">
+    <div className={styles['popup__footer']}>
+      <div className={styles['popup__left-container']}>
         <SearchDropdown />
         <input
-          className="popup__tag-input"
+          className={styles['popup__tag-input']}
           type="text"
           placeholder="#"
           value={tagInput}
@@ -90,9 +90,9 @@ const Footer: React.FC = () => {
         />
       </div>
       
-      <div className="popup__buttons">
-        <div className="popup__actions">
-          <label htmlFor="image-upload" className="popup__action-btn">
+      <div className={styles['popup__buttons']}>
+        <div className={styles['popup__actions']}>
+          <label htmlFor="image-upload" className={styles['popup__action-btn']}>
             <Image size={25} />
             <input
               id="image-upload"
@@ -102,15 +102,15 @@ const Footer: React.FC = () => {
               style={{ display: 'none' }}
             />
           </label>
-          {/* <button onClick={handleCodeSnippet} className="popup__action-btn">
+          {/* <button onClick={handleCodeSnippet} className={styles['popup__action-btn']}>
             <Code size={20} />
           </button>
-          <button onClick={handleQuote} className="popup__action-btn">
+          <button onClick={handleQuote} className={styles['popup__action-btn']}>
             <Quote size={20} />
           </button> */}
         </div>
-        <button className="popup__post-btn" onClick={handleCancel}>Cancel</button>
-        <button className="popup__post-btn" onClick={handleSave} disabled={!!saveStatus}>{saveStatus || 'Save'}</button>
+        <button className={styles['popup__post-btn']} onClick={handleCancel}>Cancel</button>
+        <button className={styles['popup__post-btn']} onClick={handleSave} disabled={!!saveStatus}>{saveStatus || 'Save'}</button>
       </div>
     </div>
   );

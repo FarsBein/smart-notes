@@ -1,12 +1,12 @@
 import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import Popup from './CaptureWindow';
-import NotesFeed from './NotesFeed';
+import Popup from '../pages/PromptWindow/Index';
+import NotesFeed from '../pages/NotesFeed/Index';
 
 
 const App: React.FC = () => {
   return (
-    <div className="p-3">
+    <div>
       <h1>My Memory</h1>
       <NotesFeed />
     </div>
@@ -15,7 +15,7 @@ const App: React.FC = () => {
 
 
 const Application: React.FC = () => {
-  // find better routing solution (try hash again)
+  // TODO: find better routing solution (try hash again)
 
   console.log('[App] : rendering routes');
   const location = useLocation();

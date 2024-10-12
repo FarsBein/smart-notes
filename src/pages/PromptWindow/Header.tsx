@@ -1,6 +1,7 @@
 import React from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { usePopupContext } from '../context/PopupContext';
+import { usePopupContext } from '../../context/PopupContext';
+import styles from './PromptWindow.module.scss';
 
 const highlightOptions = [
   { name: 'None', color: '#3d3d3d' },
@@ -13,24 +14,24 @@ const Header: React.FC = () => {
   const { selectedHighlight, setSelectedHighlight } = usePopupContext();
 
   return (
-    <div className="popup__header">
-      <div className="popup__date">
+    <div className={styles['popup__header']}>
+      <div className={styles['popup__date']}>
         {new Date().toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
       </div>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
-          <button className="popup__highlight" style={{ backgroundColor: selectedHighlight.color }}></button>
+          <button className={styles['popup__highlight']} style={{ backgroundColor: selectedHighlight.color }}></button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
-          <DropdownMenu.Content className="dropdown-menu-content">
+          <DropdownMenu.Content className={styles['dropdown-menu-content']}>
             {highlightOptions.map((option) => (
               <DropdownMenu.Item
                 key={option.name}
-                className="dropdown-menu-item"
+                className={styles['dropdown-menu-item']}
                 onClick={() => setSelectedHighlight(option)}
               >
-                <div className="color-option">
-                  <div className="color-circle" style={{ backgroundColor: option.color }}></div>
+                <div className={styles['color-option']}>
+                  <div className={styles['color-circle']} style={{ backgroundColor: option.color }}></div>
                   <span>{option.name}</span>
                 </div>
               </DropdownMenu.Item>

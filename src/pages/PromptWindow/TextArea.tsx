@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, ClipboardEvent } from 'react';
-import { usePopupContext } from '../context/PopupContext';
-import '../styles/global.scss';
+import { usePopupContext } from '../../context/PopupContext';
+import styles from './PromptWindow.module.scss';
 
 const TextArea: React.FC = () => {
   const { note, setNote, handleSave, setAttachments, handleClipboard } = usePopupContext();
@@ -45,10 +45,10 @@ const TextArea: React.FC = () => {
   };
 
   return (
-    <div className="popup__content">
+    <div className={styles['popup__content']}>
       <textarea
         ref={textareaRef}
-        className="popup__textarea"
+        className={styles['popup__textarea']}
         value={note}
         onChange={handleNoteChange}
         onKeyDown={handleKeyDown}

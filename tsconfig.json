@@ -15,7 +15,8 @@
       "*": ["node_modules/*"],
       "@/*": ["src/*"],
       "components/*": ["src/components/*"],
-      "styles/*": ["src/styles/*"]
+      "styles/*": ["src/styles/*"],
+      "types/*": ["src/@types/*"]
     },
     "jsx": "react-jsx",
     "typeRoots": ["node_modules/@types", "src/@types"]

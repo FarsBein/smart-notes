@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, KeyboardEvent  } from 'react';
-import '../styles/global.scss';
-import inbox from '../assets/Inbox.png';
+import inbox from '../../assets/Inbox.png';
+import styles from './PromptWindow.module.scss';
 
 type Option = {
   id: string;
@@ -110,12 +110,12 @@ const SearchDropdown: React.FC = () => {
 
   return (
     <div 
-      className="search-dropdown-container" 
+      className={styles['search-dropdown-container']} 
       ref={dropdownRef}
       onKeyDown={handleKeyDown}
     >
       <div 
-        className="popup__sort-inbox" 
+        className={styles['popup__sort-inbox']} 
         onClick={() => setIsOpen(!isOpen)}
         tabIndex={0}
         role="combobox"
@@ -123,11 +123,11 @@ const SearchDropdown: React.FC = () => {
         aria-controls="dropdown-list"
         aria-haspopup="listbox"
       >
-        <img src={inbox} className="popup__inbox-icon" alt="inbox" />
+        <img src={inbox} className={styles['popup__inbox-icon']} alt="inbox" />
         <div>{displayTerm}</div>
       </div>
       {isOpen && (
-        <div className="dropdown-content">
+        <div className={styles['dropdown-content']}>
           <input
             ref={inputRef}
             type="text"
@@ -137,7 +137,7 @@ const SearchDropdown: React.FC = () => {
             autoFocus
           />
           <ul 
-            className="dropdown-list" 
+            className={styles['dropdown-list']} 
             role="listbox" 
             id="dropdown-list"
             ref={listRef}
@@ -146,7 +146,7 @@ const SearchDropdown: React.FC = () => {
               <li
                 key={option.id}
                 onClick={() => handleOptionSelect(option)}
-                className={index === selectedIndex ? 'selected' : ''}
+                className={index === selectedIndex ? styles['selected'] : ''}
                 role="option"
                 aria-selected={index === selectedIndex}
               >
@@ -155,14 +155,14 @@ const SearchDropdown: React.FC = () => {
             ))}
             {searchTerm && (
               <li
-                className={`new-project ${
-                  selectedIndex === filteredOptions.length ? 'selected' : ''
+                className={`${styles['new-project']} ${
+                  selectedIndex === filteredOptions.length ? styles['selected'] : ''
                 }`}
                 onClick={handleAddNewOption}
                 role="option"
                 aria-selected={selectedIndex === filteredOptions.length}
               >
-                <span className="icon">+</span>
+                <span className={styles['icon']}>+</span>
                 {searchTerm}
               </li>
             )}

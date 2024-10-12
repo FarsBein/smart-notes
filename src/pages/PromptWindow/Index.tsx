@@ -1,11 +1,12 @@
 import React, { DragEvent } from 'react';
-import '../styles/global.scss';
-import { PopupProvider, usePopupContext } from '../context/PopupContext';
+
+import { PopupProvider, usePopupContext } from '../../context/PopupContext';
 import Header from './Header';
 import TextArea from './TextArea';
 import AttachmentList from './AttachmentList';
 import Footer from './Footer';
 import { Check, Loader2 } from 'lucide-react';
+import styles from './PromptWindow.module.scss';
 
 const PopupContent: React.FC = () => {
   const { attachments, setAttachments, isSaving, saveStatus, handleClipboard } = usePopupContext();
@@ -25,22 +26,22 @@ const PopupContent: React.FC = () => {
 
   return (
         isSaving ? 
-        <div className="saving-container">
-          <div className="saving-content">
-          <Loader2 className="loading-icon" size={16} />
+        <div className={styles['saving-container']}>
+          <div className={styles['saving-content']}>
+          <Loader2 className={styles['loading-icon']} size={16} />
           <p>Saving</p>
           </div>
         </div> :
 
         saveStatus ? 
-        <div className="save-status-container">
-          <div className="save-status-content">
-            <Check className="save-status" size={18} />
+        <div className={styles['save-status-container']}>
+          <div className={styles['save-status-content']}>
+            <Check className={styles['save-status']} size={18} />
             <p>{saveStatus}</p>
           </div>
         </div> : 
         
-        <div className="popup" onDrop={handleDrop} onDragOver={handleDragOver}>
+        <div className={styles['popup']} onDrop={handleDrop} onDragOver={handleDragOver}>
           <Header />
           <TextArea />
           <AttachmentList attachments={attachments} setAttachments={setAttachments} />
