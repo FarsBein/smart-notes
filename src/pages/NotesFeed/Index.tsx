@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import styles from './NotesFeed.module.scss';
-import { Search, Cone, X } from 'lucide-react';
+import { Search, Cone, X, Trash2, Edit2, Save, X as Cancel } from 'lucide-react';
 
 
 const NotesFeed: React.FC = () => {
@@ -236,19 +236,27 @@ const NotesFeed: React.FC = () => {
                 <div className={styles['note-date']}>{getRelativeTime(note.updatedAt)}</div>
               </div>
               <div className={`${styles['note-actions']} ${editingNote === note.fileName ? styles['editing'] : ''}`}>
-                <button onClick={() => deleteNote(note.fileName)}>Delete</button>
+                <button onClick={() => deleteNote(note.fileName)}>
+                  <Trash2 size={16} /> Delete
+                </button>
                 {editingNote === note.fileName ? (
                   <>
-                    <button onClick={() => saveEdit(note.fileName)}>Save</button>
-                    <button onClick={() => setEditingNote(null)}>Cancel</button>
+                    <button onClick={() => saveEdit(note.fileName)}>
+                      <Save size={16} /> Save
+                    </button>
+                    <button onClick={() => setEditingNote(null)}>
+                      <Cancel size={16} /> Cancel
+                    </button>
                   </>
                 ) : (
-                  <button onClick={() => startEditing(note.fileName, note.content)}>Edit</button>
+                  <button onClick={() => startEditing(note.fileName, note.content)}>
+                    <Edit2 size={16} /> Edit
+                  </button>
                 )}
               </div>
             </div>
           </div>
-          <div className={styles['note-divider']}></div>
+          {/* <div className={styles['note-divider']}></div> */}
         </>
       ))}
     </div>

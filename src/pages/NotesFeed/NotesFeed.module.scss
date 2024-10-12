@@ -106,7 +106,7 @@ body {
                 display: flex;
                 justify-content: space-between;
                 flex-wrap: wrap;
-                color: var(--color-text-primary);
+                color: var(--color-text-secondary);
 
                 span {
                     margin-right: $spacing;
@@ -129,6 +129,30 @@ body {
             .note-actions {
                 opacity: 0;
                 transition: opacity 0.3s ease;
+                width: 100%;
+                display: flex;
+                justify-content: flex-start;
+                button {
+                    display: flex;
+                    align-items: center;
+                    margin-right: var(--spacing-2);
+                    padding: var(--spacing-1) var(--spacing-2);
+                    border-radius: var(--border-radius-lg);
+                    background-color: var(--color-background-secondary);
+                    color: var(--color-text-secondary);
+                    border: none;
+                    cursor: pointer;
+
+                    svg {
+                        margin-right: var(--spacing-1);
+                    }
+
+                    &:hover {
+                        color: var(--color-text-primary);
+                        background-color: var(--color-accent);
+                    }
+                }
+
             }
 
             &:hover .note-actions,
