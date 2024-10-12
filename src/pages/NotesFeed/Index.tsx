@@ -233,7 +233,7 @@ const NotesFeed: React.FC = () => {
                 {note.tags && note.tags.length > 0 && (
                   <div>{note.tags.map((tag: string, i: number) => <span key={i}>{tag}</span>)}</div>
                 )}
-                <div>{getRelativeTime(note.updatedAt)}</div>
+                <div className={styles['note-date']}>{getRelativeTime(note.updatedAt)}</div>
               </div>
               <div className={`${styles['note-actions']} ${editingNote === note.fileName ? styles['editing'] : ''}`}>
                 <button onClick={() => deleteNote(note.fileName)}>Delete</button>
