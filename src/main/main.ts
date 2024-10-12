@@ -23,6 +23,8 @@ const createWindow = (): void => {
     title: `${productName} ${app.getVersion()}`,
     minWidth: 550,
     minHeight: 750,
+    frame: false,  // This removes the default frame
+    titleBarStyle: 'hidden',  // This hides the title bar
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       contextIsolation: true,
@@ -53,6 +55,23 @@ const createWindow = (): void => {
   globalShortcut.register('CommandOrControl+Shift+N', () => {
     console.log('Shortcut triggered');
     createPopup();
+  });
+
+  // title bar handlers
+  ipcMain.on('minimize-window', () => {
+    mainWindow?.minimize();
+  });
+
+  ipcMain.on('maximize-window', () => {
+    if (mainWindow?.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow?.maximize();
+    }
+  });
+
+  ipcMain.on('close-window', () => {
+    mainWindow?.close();
   });
 };
 
