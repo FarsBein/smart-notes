@@ -1,5 +1,9 @@
 @import '../../styles/themes.scss';
 
+body {
+    background-color: transparent;
+}
+
 .notes-feed {
     display: flex;
     flex-direction: column;
@@ -19,24 +23,7 @@
     }
 }
 
-.attachments {
-    margin-top: var(--spacing-3);
 
-    img {
-        max-width: 100%;
-        height: auto;
-        margin-top: var(--spacing-3);
-        border-radius: var(--border-radius-sm);
-    }
-
-    blockquote {
-        background-color: var(--color-background-primary);
-        border-left: 4px solid var(--color-border);
-        margin: var(--spacing-3) 0;
-        padding: var(--spacing-3);
-        color: var(--color-text-secondary);
-    }
-}
 
 .notes-container-wrapper {
     display: flex;
@@ -48,97 +35,186 @@
     $spacing: 10px;
     $line-height: calc(100% + 32px);
     background-color: var(--color-background-primary);
-    // margin: var(--spacing-4) var(--spacing-5);
 
     .notes-container {
-      display: flex;
-      font-size: 17px;
-      margin: 25px 0;
-      margin-bottom: 30px;
-      margin: var(--spacing-4) var(--spacing-5);
-      
-      .note-legend {
-        margin-top: 5px;
-        margin-right: 8px;
         display: flex;
-        flex-direction: column;
-        align-items: center;
-        position: relative;
-  
-        &-dot {
-          width: $circle-width;
-          height: $circle-width;
-          border-radius: 50%;
-          background-color: var(--color-text-primary);
-          z-index: 1;
-        }
-  
-        &-line {
-          width: $line-width;
-          position: absolute;
-          top: calc(#{$circle-width} + 4px);
-          height: $line-height;
-          background-color: var(--color-text-primary);
-        }
-      }
-  
-      .note-content {
-        display: flex;
-        flex-direction: column;
-        font-size: 18px;
-        flex-grow: 1;
-        width: 100%;
-        padding: 0 $spacing $spacing $spacing;
-        gap: $spacing;
-  
+        font-size: 17px;
+        margin: 25px 0;
+        margin-bottom: 30px;
+        margin: var(--spacing-4) var(--spacing-5);
 
-        .note-content-text {
-            p {
-                margin: 0;
-            }            
+        .note-legend {
+            margin-top: 5px;
+            margin-right: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+
+            &-dot {
+                width: $circle-width;
+                height: $circle-width;
+                border-radius: 50%;
+                background-color: var(--color-text-tertiary);
+                z-index: 1;
+            }
+
+            &-line {
+                width: $line-width;
+                position: absolute;
+                top: calc(#{$circle-width} + 4px);
+                height: $line-height;
+                background-color: var(--color-text-primary);
+            }
+        }
+
+        .note-content {
+            display: flex;
+            flex-direction: column;
+            font-size: 18px;
+            flex-grow: 1;
+            width: 100%;
+            padding: 0 $spacing $spacing $spacing;
+            gap: $spacing;
+
+
+            .note-content-text {
+                p {
+                    margin: 0;
+                }
+            }
+
+            .note-attachments-container {
+                display: flex;
+                flex-wrap: wrap;
+                gap: $spacing;
+
+                img {
+                    max-width: calc(50% - #{$spacing} / 2);
+                    object-fit: contain;
+                    border-radius: 0.5rem;
+                    transition: transform 0.3s ease;
+
+                    @media (max-width: 700px) {
+                        max-width: 100%;
+                    }
+                }
+            }
+
+            .note-tags-container {
+                font-size: var(--font-size-sm);
+                display: flex;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                color: var(--color-text-primary);
+
+                span {
+                    margin-right: $spacing;
+                    cursor: pointer;
+
+                    &:hover {
+                        color: var(--color-text-primary);
+                    }
+
+                    &:last-child {
+                        margin-right: 0;
+                    }
+                }
+            }
+
+            .note-actions {
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            &:hover .note-actions,
+            .note-actions.editing {
+                opacity: 1;
+            }
         }
 
         .note-attachments-container {
-          display: flex;
-          flex-wrap: wrap;
-          gap: $spacing;
-  
-          img {
-            max-width: calc(50% - #{$spacing} / 2);
-            object-fit: contain;
-            border-radius: 0.5rem;
-            transition: transform 0.3s ease;
-  
-            @media (max-width: 700px) {
-              max-width: 100%;
-            }
-          }
-        }
-  
-        .note-tags-container {
-          font-size: var(--font-size-sm);
-          display: flex;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          color: var(--color-text-primary);
+            margin-top: var(--spacing-3);
         
-          span {
-            margin-right: $spacing;
-            cursor: pointer;
-  
-            &:hover {
-              color: var(--color-text-primary);
+            img {
+                max-width: 100%;
+                height: auto;
+                margin-top: var(--spacing-3);
+                border-radius: var(--border-radius-sm);
             }
-  
-            &:last-child {
-              margin-right: 0;
+        
+            blockquote {
+                background-color: var(--color-background-primary);
+                border-left: 4px solid var(--color-border);
+                margin: var(--spacing-3) 0;
+                padding: var(--spacing-3);
+                color: var(--color-text-secondary);
             }
-          }
         }
-      }
     }
-  }
+}
 
 .note-divider {
     border-bottom: 1px solid var(--color-border);
 }
+
+.search-bar {
+    
+
+    .search-input-container {
+        margin: var(--spacing-2);
+
+        display: flex;
+        flex-direction: row;
+        gap: var(--spacing-2);
+        .search-icon {
+            background-color: var(--color-background-secondary);
+            padding: var(--spacing-1) var(--spacing-2);
+            border-radius: var(--border-radius-lg);
+            width: 50px;
+            height: 40px;  
+            cursor:pointer;
+            color: var(--color-text-secondary);
+
+            &:hover {
+                color: var(--color-text-primary);
+            }
+        }
+
+        .semantic-search-icon {
+            cursor: pointer;
+            background-color: var(--color-background-secondary);
+            padding: var(--spacing-1) var(--spacing-2);
+            border-radius: var(--border-radius-lg);
+            width: 50px;
+            height: 40px;  
+            cursor:pointer;
+            color: var(--color-text-secondary);
+
+            &.selected {
+                color: var(--color-text-primary);
+                background-color: var(--color-accent);
+            }
+        }
+
+        input {
+            width: 100%;
+            background-color: var(--color-background-secondary);
+            color: var(--color-text-primary);
+            border: none;
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-2) var(--spacing-4);
+            font-size: var(--font-size-base);
+              
+            &::placeholder {
+              color: var(--color-text-secondary);
+            }
+        
+            &:focus {
+              outline: none;
+            }
+
+          }
+        
+    }
+  }

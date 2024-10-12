@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import styles from './NotesFeed.module.scss';
+import { Search, Cone, X } from 'lucide-react';
 
 
 const NotesFeed: React.FC = () => {
@@ -9,7 +10,8 @@ const NotesFeed: React.FC = () => {
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editContent, setEditContent] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchType, setSearchType] = useState<'semantic' | 'basic'>('semantic');
+  const [isSemanticSearch, setIsSemanticSearch] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     const handleNotesData = (notesData: Note[]) => {
@@ -92,6 +94,49 @@ const NotesFeed: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000); // Update every minute
+    return () => clearInterval(timer);
+  }, []);
+
+  const getRelativeTime = (date: string): string => {
+    const now = new Date();
+    const pastDate = new Date(date);
+    const seconds = Math.floor((now.getTime() - pastDate.getTime()) / 1000);
+
+    let interval = Math.floor(seconds / 31536000); // years
+    if (interval >= 1) {
+      return `${interval} year${interval !== 1 ? 's' : ''} ago`;
+    }
+
+    interval = Math.floor(seconds / 2592000); // months
+    if (interval >= 1) {
+      return `${interval} month${interval !== 1 ? 's' : ''} ago`;
+    }
+
+    interval = Math.floor(seconds / 604800); // weeks
+    if (interval >= 1) {
+      return `${interval} week${interval !== 1 ? 's' : ''} ago`;
+    }
+
+    interval = Math.floor(seconds / 86400); // days
+    if (interval >= 1) {
+      return `${interval} day${interval !== 1 ? 's' : ''} ago`;
+    }
+
+    interval = Math.floor(seconds / 3600); // hours
+    if (interval >= 1) {
+      return `${interval} hour${interval !== 1 ? 's' : ''} ago`;
+    }
+
+    interval = Math.floor(seconds / 60); // minutes
+    if (interval >= 1) {
+      return `${interval} minute${interval !== 1 ? 's' : ''} ago`;
+    }
+
+    return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+  };
+
   const deleteNote = (fileName: string) => {
     window.electron.ipcRenderer.send('delete-note', fileName);
   };
@@ -125,7 +170,7 @@ const NotesFeed: React.FC = () => {
   };
 
   const handleSearch = () => {
-    if (searchType === 'semantic') {
+    if (isSemanticSearch) {
       window.electron.ipcRenderer.send('search-notes', searchQuery);
     } else {
       // Perform basic search locally
@@ -145,66 +190,65 @@ const NotesFeed: React.FC = () => {
   return (
     <div className={styles['notes-container-wrapper']}>
       <div className={styles['search-bar']}>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search notes..."
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-        />
-        <button onClick={handleSearch}>Search</button>
-        <button onClick={exitSearch}>Exit Search</button>
-        <select value={searchType} onChange={(e) => setSearchType(e.target.value as 'semantic' | 'basic')}>
-          <option value="semantic">Semantic Search</option>
-          <option value="basic">Basic Search</option>
-        </select>
+        <div className={styles['search-input-container']}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search"
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <Search onClick={handleSearch} className={styles['search-icon']} />
+          <Cone onClick={() => setIsSemanticSearch(!isSemanticSearch)} className={`${styles['semantic-search-icon']} ${isSemanticSearch ? styles['selected'] : ''}`}/>
+          <X onClick={exitSearch} className={styles['search-icon']} />
+        </div>
       </div>
+      <div className={styles['note-divider']}></div>
       {filteredNotes.map((note, index) => (
         <>
           <div className={styles['notes-container']} key={index}>
-          <div className={styles['note-legend']}>
-            <div className={styles['note-legend-dot']} />
-            {/* <div className={styles['note-legend-line']} /> */}
-          </div>
-          <div className={styles['note-content']}>
-            
-            <div className={styles['note-content-text']}>
-              {editingNote === note.fileName ? (
-                <textarea
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  rows={10}
-                  cols={50}
-                />
-              ) : (
-                <ReactMarkdown>{note.content}</ReactMarkdown>
-              )}
+            <div className={styles['note-legend']}>
+              <div className={styles['note-legend-dot']} />
+              {/* <div className={styles['note-legend-line']} /> */}
             </div>
-            {note.attachments && note.attachments.length > 0 && (
-              <div className={styles['note-attachments-container']}>
-                {note.attachments.map((attachment, i) => renderAttachment(attachment, i))}
+            <div className={styles['note-content']}>
+              <div className={styles['note-content-text']}>
+                {editingNote === note.fileName ? (
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    rows={10}
+                    cols={50}
+                  />
+                ) : (
+                  <ReactMarkdown>{note.content}</ReactMarkdown>
+                )}
               </div>
-            )}
-            <div className={styles['note-tags-container']}>
-              {note.tags && note.tags.length > 0 && (
-                <div>{note.tags.map((tag: string, i: number) => <span key={i}>{tag}</span>)}</div>
+              {note.attachments && note.attachments.length > 0 && (
+                <div className={styles['note-attachments-container']}>
+                  {note.attachments.map((attachment, i) => renderAttachment(attachment, i))}
+                </div>
               )}
-              <div>{new Date(note.updatedAt).toLocaleString()}</div>
-            </div>
-            <div>
-              <button onClick={() => deleteNote(note.fileName)}>Delete</button>
-              {editingNote === note.fileName ? (
-                <>
-                  <button onClick={() => saveEdit(note.fileName)}>Save</button>
-                  <button onClick={() => setEditingNote(null)}>Cancel</button>
-                </>
-              ) : (
-                <button onClick={() => startEditing(note.fileName, note.content)}>Edit</button>
-              )}
+              <div className={styles['note-tags-container']}>
+                {note.tags && note.tags.length > 0 && (
+                  <div>{note.tags.map((tag: string, i: number) => <span key={i}>{tag}</span>)}</div>
+                )}
+                <div>{getRelativeTime(note.updatedAt)}</div>
+              </div>
+              <div className={`${styles['note-actions']} ${editingNote === note.fileName ? styles['editing'] : ''}`}>
+                <button onClick={() => deleteNote(note.fileName)}>Delete</button>
+                {editingNote === note.fileName ? (
+                  <>
+                    <button onClick={() => saveEdit(note.fileName)}>Save</button>
+                    <button onClick={() => setEditingNote(null)}>Cancel</button>
+                  </>
+                ) : (
+                  <button onClick={() => startEditing(note.fileName, note.content)}>Edit</button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-        <div className={styles['note-divider']}></div>
+          <div className={styles['note-divider']}></div>
         </>
       ))}
     </div>
@@ -212,5 +256,6 @@ const NotesFeed: React.FC = () => {
 };
 
 export default NotesFeed;
+
 
 

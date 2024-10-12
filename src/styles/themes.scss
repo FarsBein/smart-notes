@@ -30,12 +30,14 @@
     --border-radius-xl: 1.5rem;
 
     /* Light Theme (Default) */
-    --color-background-primary: #f5f5f1;
-    --color-background-secondary: #ffffff;
-    --color-text-primary: #000000;
-    --color-text-secondary: #86868b;
-    --color-accent: #0071e3;
-    --color-border: #d2d2d7;
+    --color-background-primary: #f4f1e4;
+    --color-background-secondary: #e8e5d8;
+    --color-background-tertiary: #dcd9cc;
+    --color-text-primary: #3c3c3c;
+    --color-text-secondary: #666666;
+    --color-text-tertiary: #999999;
+    --color-accent: #c1975c;
+    --color-border: #d0cdc0;
 }
 
 /* Dark Theme */
@@ -49,5 +51,6 @@
         --color-text-tertiary: #636366;
         --color-accent: #0a84ff;
         --color-border: #3a3a3c;
+        
     }
 }
