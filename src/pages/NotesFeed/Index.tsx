@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import styles from './NotesFeed.module.scss';
 import { Search, Cone, X, Trash2, Edit2, Save, X as Cancel } from 'lucide-react';
@@ -12,7 +12,8 @@ const NotesFeed: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSemanticSearch, setIsSemanticSearch] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
-
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
   useEffect(() => {
     const handleNotesData = (notesData: Note[]) => {
       console.log('get-notes notesData:', notesData);
@@ -187,6 +188,18 @@ const NotesFeed: React.FC = () => {
     setFilteredNotes(notes); // Reset to original notes
   };
 
+
+  const adjustTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  };
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [editContent]);
+
   return (
     <div className={styles['notes-container-wrapper']}>
       <div className={styles['search-bar']}>
@@ -215,10 +228,11 @@ const NotesFeed: React.FC = () => {
               <div className={styles['note-content-text']}>
                 {editingNote === note.fileName ? (
                   <textarea
+                    ref={textareaRef}
+                    className={styles['note-content-textarea']}
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    rows={10}
-                    cols={50}
+                    spellCheck={true}
                   />
                 ) : (
                   <ReactMarkdown>{note.content}</ReactMarkdown>

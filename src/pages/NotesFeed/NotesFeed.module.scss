@@ -82,6 +82,22 @@ body {
                 p {
                     margin: 0;
                 }
+
+                .note-content-textarea {
+                    width: 100%;
+                    background-color: transparent;
+                    border: none;
+                    color: var(--color-text-primary);
+                    font-size: inherit;
+                    resize: none;
+                    outline: none;
+                    font-family: inherit;
+                    height: auto;
+                    padding: 0;
+                    &::placeholder {
+                        color: var(--color-text-secondary);
+                    }
+                }
             }
 
             .note-attachments-container {
@@ -132,6 +148,7 @@ body {
                 width: 100%;
                 display: flex;
                 justify-content: flex-start;
+
                 button {
                     display: flex;
                     align-items: center;
@@ -163,14 +180,14 @@ body {
 
         .note-attachments-container {
             margin-top: var(--spacing-3);
-        
+
             img {
                 max-width: 100%;
                 height: auto;
                 margin-top: var(--spacing-3);
                 border-radius: var(--border-radius-sm);
             }
-        
+
             blockquote {
                 background-color: var(--color-background-primary);
                 border-left: 4px solid var(--color-border);
@@ -187,7 +204,7 @@ body {
 }
 
 .search-bar {
-    
+
 
     .search-input-container {
         margin: var(--spacing-2);
@@ -195,13 +212,14 @@ body {
         display: flex;
         flex-direction: row;
         gap: var(--spacing-2);
+
         .search-icon {
             background-color: var(--color-background-secondary);
             padding: var(--spacing-1) var(--spacing-2);
             border-radius: var(--border-radius-lg);
             width: 50px;
-            height: 40px;  
-            cursor:pointer;
+            height: 40px;
+            cursor: pointer;
             color: var(--color-text-secondary);
 
             &:hover {
@@ -215,8 +233,8 @@ body {
             padding: var(--spacing-1) var(--spacing-2);
             border-radius: var(--border-radius-lg);
             width: 50px;
-            height: 40px;  
-            cursor:pointer;
+            height: 40px;
+            cursor: pointer;
             color: var(--color-text-secondary);
 
             &.selected {
@@ -233,16 +251,16 @@ body {
             border-radius: var(--border-radius-lg);
             padding: var(--spacing-2) var(--spacing-4);
             font-size: var(--font-size-base);
-              
+
             &::placeholder {
-              color: var(--color-text-secondary);
-            }
-        
-            &:focus {
-              outline: none;
+                color: var(--color-text-secondary);
             }
 
-          }
-        
+            &:focus {
+                outline: none;
+            }
+
+        }
+
     }
-  }
+}
