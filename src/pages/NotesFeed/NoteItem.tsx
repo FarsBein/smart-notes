@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Trash2, Edit2, Save, X as Cancel } from 'lucide-react';
 import styles from './NotesFeed.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
+import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
 
 interface NoteItemProps {
   note: {
@@ -23,18 +24,6 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
     setNotes,
     setFilteredNotes,
   } = useNotes();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    adjustTextareaHeight();
-  }, [editContent]);
-
-  const adjustTextareaHeight = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  };
 
   const deleteNote = (fileName: string) => {
     window.electron.ipcRenderer.send('delete-note', fileName);
@@ -114,13 +103,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
       <div className={styles['note-content']}>
         <div className={styles['note-content-text']}>
           {editingNote === note.fileName ? (
-            <textarea
-              ref={textareaRef}
-              className={styles['note-content-textarea']}
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              spellCheck={true}
-            />
+            <MarkdownEditor content={editContent} setContent={setEditContent} />
           ) : (
             <ReactMarkdown>{note.content}</ReactMarkdown>
           )}

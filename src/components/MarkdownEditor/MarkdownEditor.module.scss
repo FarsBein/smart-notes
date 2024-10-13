@@ -1,0 +1,15 @@
+.textarea {
+    width: 100%;
+    background-color: transparent;
+    border: none;
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: inherit;
+    resize: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    &::placeholder {
+        color: var(--color-text-secondary);
+    }
+}

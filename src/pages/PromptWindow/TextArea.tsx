@@ -1,59 +1,30 @@
-import React, { useRef, useEffect, ClipboardEvent } from 'react';
+import React from 'react';
 import { usePopupContext } from '../../contexts/PopupContext';
+import MarkdownEditor from '../../components/MarkdownEditor/MarkdownEditor';
 import styles from './PromptWindow.module.scss';
 
 const TextArea: React.FC = () => {
   const { note, setNote, handleSave, setAttachments, handleClipboard } = usePopupContext();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const adjustTextareaHeight = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
+  const handleClearAttachments = () => {
+    setAttachments([]);
   };
 
-  useEffect(() => {
-    // Auto-focus on the textarea when the component mounts
-    textareaRef.current?.focus();
-    
-    adjustTextareaHeight();
-  }, [note]);
-
-  const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNote(e.target.value);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSave();
-    } else if (e.key === 'Backspace' && e.shiftKey) {
-      e.preventDefault();
-      setAttachments([]);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      window.electron.ipcRenderer.send('close-popup');
-    }
-  };
-
-  const handlePaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
-    const items = e.clipboardData.items;
-
-    handleClipboard(items);
+  const handleClose = () => {
+    window.electron.ipcRenderer.send('close-popup');
   };
 
   return (
     <div className={styles['popup__content']}>
-      <textarea
-        ref={textareaRef}
-        className={styles['popup__textarea']}
-        value={note}
-        onChange={handleNoteChange}
-        onKeyDown={handleKeyDown}
-        onPaste={handlePaste}
+      <MarkdownEditor
+        content={note}
+        setContent={setNote}
+        onSave={handleSave}
+        onClearAttachments={handleClearAttachments}
+        onClose={handleClose}
+        handleClipboard={handleClipboard}
         placeholder="Capture your thoughts here…"
-        spellCheck={true}
+        autoFocus={true}
       />
     </div>
   );

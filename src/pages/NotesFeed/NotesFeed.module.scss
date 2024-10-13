@@ -82,22 +82,6 @@ body {
                 p {
                     margin: 0;
                 }
-
-                .note-content-textarea {
-                    width: 100%;
-                    background-color: transparent;
-                    border: none;
-                    color: var(--color-text-primary);
-                    font-size: inherit;
-                    resize: none;
-                    outline: none;
-                    font-family: inherit;
-                    height: auto;
-                    padding: 0;
-                    &::placeholder {
-                        color: var(--color-text-secondary);
-                    }
-                }
             }
 
             .note-attachments-container {
