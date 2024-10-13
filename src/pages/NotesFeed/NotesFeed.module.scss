@@ -30,10 +30,10 @@ body {
     flex-direction: column;
     align-items: left;
 
-    $circle-width: 20px;
+    $circle-width: 15px;
     $line-width: 2px;
     $spacing: 10px;
-    $line-height: calc(100% + 32px);
+    $line-height: calc(100% + 19px);
     background-color: var(--color-background-primary);
 
     .notes-container {
@@ -41,11 +41,11 @@ body {
         font-size: 17px;
         margin: 25px 0;
         margin-bottom: 30px;
-        margin: var(--spacing-4) var(--spacing-5);
+        margin: var(--spacing-4) var(--spacing-4) var(--spacing-6);
 
         .note-legend {
-            margin-top: 5px;
-            margin-right: 8px;
+            margin-top: 6px;
+            margin-right: 2px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -64,7 +64,7 @@ body {
                 position: absolute;
                 top: calc(#{$circle-width} + 4px);
                 height: $line-height;
-                background-color: var(--color-text-primary);
+                background-color: var(--color-text-tertiary);
             }
         }
 
