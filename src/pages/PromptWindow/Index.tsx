@@ -1,6 +1,6 @@
 import React, { DragEvent } from 'react';
 
-import { PopupProvider, usePopupContext } from '../../context/PopupContext';
+import { PopupProvider, usePopupContext } from '../../contexts/PopupContext';
 import Header from './Header';
 import TextArea from './TextArea';
 import AttachmentList from './AttachmentList';

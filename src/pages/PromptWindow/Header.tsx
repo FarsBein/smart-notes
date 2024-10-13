@@ -1,6 +1,6 @@
 import React from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { usePopupContext } from '../../context/PopupContext';
+import { usePopupContext } from '../../contexts/PopupContext';
 import styles from './PromptWindow.module.scss';
 
 const highlightOptions = [

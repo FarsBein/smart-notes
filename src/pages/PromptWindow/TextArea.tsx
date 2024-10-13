@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, ClipboardEvent } from 'react';
-import { usePopupContext } from '../../context/PopupContext';
+import { usePopupContext } from '../../contexts/PopupContext';
 import styles from './PromptWindow.module.scss';
 
 const TextArea: React.FC = () => {

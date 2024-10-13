@@ -1,7 +1,7 @@
 import React, { ChangeEvent, useState, KeyboardEvent } from 'react';
 import { Image, Code, Quote } from 'lucide-react';
 import SearchDropdown from './SearchDropdown';
-import { usePopupContext } from '../../context/PopupContext';
+import { usePopupContext } from '../../contexts/PopupContext';
 import styles from './PromptWindow.module.scss';
 
 const Footer: React.FC = () => {
