@@ -41,9 +41,9 @@ const TitleBar: React.FC = () => {
     <div className="title-bar">
       <div className="title">{currentTime}</div>
       <div className="title-bar-buttons">
-        <button onClick={handleMinimize}><Minus size={16} /></button> 
-        <button onClick={handleMaximize}><Square size={16} /></button>
-        <button onClick={handleClose}><X size={16} /></button>
+        <button onClick={handleMinimize}><Minus size={17} /></button> 
+        <button onClick={handleMaximize}><Square size={15} /></button>
+        <button onClick={handleClose} className="close-button"><X size={17} /></button>
       </div>
     </div>
   );
