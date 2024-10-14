@@ -6,13 +6,7 @@ import { useNotes } from '../../contexts/NotesContext';
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
 
 interface NoteItemProps {
-  note: {
-    fileName: string;
-    content: string;
-    updatedAt: string;
-    attachments?: string[];
-    tags?: string[];
-  };
+  note: Note;
 }
 
 const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
@@ -21,8 +15,6 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
     setEditingNote,
     editContent,
     setEditContent,
-    setNotes,
-    setFilteredNotes,
   } = useNotes();
 
   const deleteNote = (fileName: string) => {

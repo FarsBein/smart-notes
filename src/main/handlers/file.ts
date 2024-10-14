@@ -14,7 +14,7 @@ const embeddingsPath = path.join(notesPath, 'embeddings.json');
 const metadataIndex = new MetadataIndex(indexPath, embeddingsPath);
 
 // Save note to file
-ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachment[]) => {
+ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachment[], isReply: boolean) => {
     try {
         const currentDate = new Date();
         const year = String(currentDate.getFullYear()).slice(-2);
@@ -41,7 +41,7 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
                     // TODO: find a better way to handle new line in quotes attachments 
                     return JSON.stringify(attachment.content.replace(/\n/g, ''));
                 case 'image':
-                    const imgContentBase64Data  = attachment.content.replace(/^data:image\/png;base64,/, "");
+                    const imgContentBase64Data = attachment.content.replace(/^data:image\/png;base64,/, "");
                     const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
                     const imgFilePath = path.join('attachments', imgFileName);
                     const normalizedImgPath = path.normalize(imgFilePath); // Normalize the path to remove any potential double slashes
@@ -65,9 +65,9 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
             highlight: null,
             highlightColor: null,
             tags: [],
-            replies: [],
             attachments: processedAttachments,
-            isReply: true,
+            replies: [],
+            isReply: isReply,
             isAI: false,
             filePath
         };
@@ -95,11 +95,11 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
                 event.reply('save-note-result', { success: false, error: err.message });
             } else {
                 console.log('Note saved successfully:', filePath);
-                
+
                 metadataIndex.addNote(metadata, embedding);
 
                 event.reply('save-note-result', { success: true, filePath });
-                
+
                 // Trigger new-note event
                 const newNote: Note = {
                     fileName,
@@ -107,9 +107,11 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
                     createdAt: currentDate.toISOString(),
                     updatedAt: currentDate.toISOString(),
                     attachments: processedAttachments,
-                    tags: []
+                    tags: [],
+                    replies: [],
+                    isReply: isReply
                 };
-                
+
                 mainWindow.webContents.send('new-note', newNote);
             }
         });
@@ -119,17 +121,36 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
     }
 });
 
-// Get all notes
+
+// Get All notes (Nested replies)
 ipcMain.on('get-notes', (event) => {
-    const notes = metadataIndex.getNotesMetadata();
-    const notesData: Note[] = notes.map(note => ({
-        fileName: note.fileName,
-        content: fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
-        createdAt: note.createdAt,
-        updatedAt: note.updatedAt,
-        attachments: note.attachments,
-        tags: note.tags
-    }));
+    const notes = metadataIndex.getParentNotesMetadata();
+    const notesData: Note[] = notes.map(note => {
+        const replies = note.replies.map(replyFileName => {
+            const replyMetadata = metadataIndex.getNoteMetadata(replyFileName);
+            return {
+                fileName: replyMetadata.fileName,
+                content: fs.readFileSync(replyMetadata.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
+                createdAt: replyMetadata.createdAt,
+                updatedAt: replyMetadata.updatedAt,
+                attachments: replyMetadata.attachments,
+                tags: replyMetadata.tags,
+                replies: [] as Note[],
+                isReply: replyMetadata.isReply
+            };
+        });
+
+        return {
+            fileName: note.fileName,
+            content: fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
+            createdAt: note.createdAt,
+            updatedAt: note.updatedAt,
+            attachments: note.attachments,
+            tags: note.tags,
+            replies: replies,
+            isReply: note.isReply
+        }
+    });
 
     console.log('notesData:', notesData);
     event.reply('notes-data', notesData);
@@ -177,14 +198,32 @@ ipcMain.on('search-notes', async (event, searchQuery: string) => {
     try {
         const queryEmbedding = await generateEmbedding(searchQuery);
         const similarNotes = metadataIndex.searchSimilarNotes(queryEmbedding);
-        const notesData: Note[] = similarNotes.map(note => ({
-            fileName: note.fileName,
-            content: fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
-            createdAt: note.createdAt,
-            updatedAt: note.updatedAt,
-            attachments: note.attachments,
-            tags: note.tags
-        }));
+        const notesData: Note[] = similarNotes.map(note => {
+            const replies = note.replies.map(replyFileName => {
+                const replyMetadata = metadataIndex.getNoteMetadata(replyFileName);
+                return {
+                    fileName: replyMetadata.fileName,
+                    content: fs.readFileSync(replyMetadata.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
+                    createdAt: replyMetadata.createdAt,
+                    updatedAt: replyMetadata.updatedAt,
+                    attachments: replyMetadata.attachments,
+                    tags: replyMetadata.tags,
+                    replies: [] as Note[],
+                    isReply: replyMetadata.isReply
+                };
+            });
+    
+            return {
+                fileName: note.fileName,
+                content: fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
+                createdAt: note.createdAt,
+                updatedAt: note.updatedAt,
+                attachments: note.attachments,
+                tags: note.tags,
+                replies: replies,
+                isReply: note.isReply
+            }
+        });
         event.reply('search-result', { success: true, notesData });
     } catch (err) {
         event.reply('search-result', { success: false, error: err.message });
@@ -201,13 +240,29 @@ ipcMain.on('get-note', (event, fileName: string) => {
         return;
     }
 
+    const replies = note.replies.map(reply => {
+        const replyMetadata = metadataIndex.getNoteMetadata(reply);
+        return {
+            fileName: replyMetadata.fileName,
+            content: fs.readFileSync(replyMetadata.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
+            createdAt: replyMetadata.createdAt,
+            updatedAt: replyMetadata.updatedAt,
+            attachments: replyMetadata.attachments,
+            tags: replyMetadata.tags,
+            replies: [] as Note[],
+            isReply: replyMetadata.isReply
+        };
+    });
+
     const noteData: Note = {
         fileName: note.fileName,
         content: fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
         createdAt: note.createdAt,
         updatedAt: note.updatedAt,
         attachments: note.attachments,
-        tags: note.tags
+        tags: note.tags,
+        replies: replies,
+        isReply: note.isReply
     };
 
     console.log('single note:', noteData);

@@ -95,7 +95,8 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const handleSave = () => {
-    window.electron.ipcRenderer.send('save-note', note, attachments);
+    const isReply = false;
+    window.electron.ipcRenderer.send('save-note', note, attachments, isReply);
     setIsSaving(true);
     setNote('');
     setAttachments([]);

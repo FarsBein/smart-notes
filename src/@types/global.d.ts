@@ -23,7 +23,7 @@ interface NoteMetadata {
     highlight: string | null;
     highlightColor: string | null;
     tags: string[];
-    replies: any[]; // define a more specific type for replies
+    replies: string[];
     attachments: string[];
     isReply: boolean;
     isAI: boolean;
@@ -44,4 +44,6 @@ interface Note {
     createdAt: string;
     updatedAt: string;
     attachments: string[];
+    replies: Note[];    
+    isReply: boolean;
 }

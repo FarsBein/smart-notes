@@ -10,15 +10,21 @@ const NotesList: React.FC = () => {
 
   return (
     <>
-      {filteredNotes.map((note, index) => (
-        <React.Fragment key={index}>
+      {filteredNotes.map((note: Note) => (
+        <React.Fragment key={note.fileName}>
           <NoteItem note={note} />
+          {note.replies.map((reply: Note) => (
+            <React.Fragment key={reply.fileName}>
+              <NoteItem note={reply} />
+            </React.Fragment>
+          ))}
           {/* <div className={styles['note-divider']}></div> */}
         </React.Fragment>
       ))}
     </>
   );
 };
+
 
 const NotesFeed: React.FC = () => {
   const { isSearchOpen } = useActionButtons();

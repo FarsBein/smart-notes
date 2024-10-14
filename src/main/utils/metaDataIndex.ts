@@ -74,7 +74,11 @@ class MetadataIndex {
     }
     
     public getNotesMetadata(): NoteMetadata[] {
-        return Object.values(this.index).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        return Object.values(this.index).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+
+    public getParentNotesMetadata(): NoteMetadata[] {
+        return Object.values(this.index).filter(note => !note.isReply).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
 
     public getNoteMetadata(fileName: string): NoteMetadata | undefined {
