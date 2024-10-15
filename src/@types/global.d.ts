@@ -44,6 +44,7 @@ interface Note {
     createdAt: string;
     updatedAt: string;
     attachments: string[];
+    parentFileName: string;
     replies: Note[];    
     isReply: boolean;
 }

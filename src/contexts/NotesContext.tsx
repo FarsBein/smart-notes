@@ -79,6 +79,25 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         };
     }, []);
 
+    // handle delete reply
+    useEffect(() => {
+        const handleDeleteReplyResult = (result: { success: boolean, parentFileName?: string, replyFileName?: string, error?: string }) => {
+            console.log('delete-reply-result:', result);
+            setNotes((prevNotes) => prevNotes.map((note: Note) => {
+                if (note.fileName === result.parentFileName) {
+                    return { ...note, replies: note.replies.filter((reply: Note) => reply.fileName !== result.replyFileName) };
+                }
+                return note;
+            }));
+        };
+
+        window.electron.ipcRenderer.on('delete-reply-result', handleDeleteReplyResult);
+
+        return () => {
+            window.electron.ipcRenderer.removeListener('delete-reply-result', handleDeleteReplyResult);
+        };
+    }, []);
+
     useEffect(() => {
         const handleUpdateResult = (result: { success: boolean, fileName?: string, updatedAt?: string, error?: string }) => {
             if (result.success) {

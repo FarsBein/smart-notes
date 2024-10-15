@@ -107,6 +107,7 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
                     createdAt: currentDate.toISOString(),
                     updatedAt: currentDate.toISOString(),
                     attachments: processedAttachments,
+                    parentFileName: '',
                     tags: [],
                     replies: [],
                     isReply: isReply
@@ -134,6 +135,7 @@ ipcMain.on('get-notes', (event) => {
                 createdAt: replyMetadata.createdAt,
                 updatedAt: replyMetadata.updatedAt,
                 attachments: replyMetadata.attachments,
+                parentFileName: note.fileName,
                 tags: replyMetadata.tags,
                 replies: [] as Note[],
                 isReply: replyMetadata.isReply
@@ -146,6 +148,7 @@ ipcMain.on('get-notes', (event) => {
             createdAt: note.createdAt,
             updatedAt: note.updatedAt,
             attachments: note.attachments,
+            parentFileName: '',
             tags: note.tags,
             replies: replies,
             isReply: note.isReply
@@ -160,12 +163,54 @@ ipcMain.on('get-notes', (event) => {
 // Delete note
 ipcMain.on('delete-note', (event, fileName: string) => {
     try {
+        const noteToDelete = metadataIndex.getNoteMetadata(fileName);
+        if (!noteToDelete) throw new Error('Note not found');
+
+        // Delete all replies first
+        const replies = noteToDelete.replies || [];
+        replies.forEach(replyFileName => {
+            metadataIndex.deleteNote(replyFileName);
+            fs.unlinkSync(path.join(notesPath, replyFileName)); 
+        });
+
         metadataIndex.deleteNote(fileName);
-        fs.unlinkSync(path.join(notesPath, fileName)); // Delete the file from the filesystem
+        fs.unlinkSync(path.join(notesPath, fileName));
+
         event.reply('delete-note-result', { success: true, fileName });
     } catch (error) {
         console.error('Failed to delete note:', error);
         event.reply('delete-note-result', { success: false, error: error.message });
+    }
+});
+
+// Delete reply
+ipcMain.on('delete-reply', (event, parentFileName: string, replyFileName: string) => {
+    try {
+        const parentNote = metadataIndex.getNoteMetadata(parentFileName);
+        if (!parentNote) throw new Error('Parent note not found');
+
+        // Remove reply from parent note's metadata
+        parentNote.replies = parentNote.replies.filter(reply => reply !== replyFileName);
+        metadataIndex.updateNoteMetadata(parentFileName, { replies: parentNote.replies });
+
+        // Update parent note file content
+        const parentNoteContent = fs.readFileSync(parentNote.filePath, 'utf-8');
+        const updatedParentNoteContent = parentNoteContent.split('\n').map(line => {
+            if (line.startsWith('replies:')) {
+                return `replies: [${parentNote.replies.join(', ')}]`;
+            }
+            return line;
+        }).join('\n');
+        fs.writeFileSync(parentNote.filePath, updatedParentNoteContent);
+
+        // Delete the reply
+        metadataIndex.deleteNote(replyFileName);
+        fs.unlinkSync(path.join(notesPath, replyFileName));
+
+        event.reply('delete-reply-result', { success: true, parentFileName, replyFileName });
+    } catch (error) {
+        console.error('Failed to delete reply:', error);
+        event.reply('delete-reply-result', { success: false, error: error.message });
     }
 });
 
@@ -207,6 +252,7 @@ ipcMain.on('search-notes', async (event, searchQuery: string) => {
                     createdAt: replyMetadata.createdAt,
                     updatedAt: replyMetadata.updatedAt,
                     attachments: replyMetadata.attachments,
+                    parentFileName: note.fileName,
                     tags: replyMetadata.tags,
                     replies: [] as Note[],
                     isReply: replyMetadata.isReply
@@ -219,6 +265,7 @@ ipcMain.on('search-notes', async (event, searchQuery: string) => {
                 createdAt: note.createdAt,
                 updatedAt: note.updatedAt,
                 attachments: note.attachments,
+                parentFileName: '',
                 tags: note.tags,
                 replies: replies,
                 isReply: note.isReply
@@ -240,7 +287,7 @@ ipcMain.on('get-note', (event, fileName: string) => {
         return;
     }
 
-    const replies = note.replies.map(reply => {
+    const replies: Note[] = note.replies.map(reply => {
         const replyMetadata = metadataIndex.getNoteMetadata(reply);
         return {
             fileName: replyMetadata.fileName,
@@ -248,6 +295,7 @@ ipcMain.on('get-note', (event, fileName: string) => {
             createdAt: replyMetadata.createdAt,
             updatedAt: replyMetadata.updatedAt,
             attachments: replyMetadata.attachments,
+            parentFileName: note.fileName,
             tags: replyMetadata.tags,
             replies: [] as Note[],
             isReply: replyMetadata.isReply
@@ -260,6 +308,7 @@ ipcMain.on('get-note', (event, fileName: string) => {
         createdAt: note.createdAt,
         updatedAt: note.updatedAt,
         attachments: note.attachments,
+        parentFileName: '',
         tags: note.tags,
         replies: replies,
         isReply: note.isReply

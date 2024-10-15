@@ -15,10 +15,32 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
     setEditingNote,
     editContent,
     setEditContent,
+    setNotes,
+    notes,
+    setFilteredNotes,
+    filteredNotes
   } = useNotes();
 
   const deleteNote = (fileName: string) => {
     window.electron.ipcRenderer.send('delete-note', fileName);
+    setNotes(notes.filter((note: Note) => note.fileName !== fileName));
+    setFilteredNotes(filteredNotes.filter((note: Note) => note.fileName !== fileName));
+  };
+
+  const deleteReply = (parentFileName: string, replyFileName: string) => {
+    window.electron.ipcRenderer.send('delete-reply', parentFileName, replyFileName);
+    setNotes(notes.filter((note: Note) => {
+      if (note.fileName === parentFileName) {
+        return note.replies.filter((reply: Note) => reply.fileName !== replyFileName);
+      }
+      return true;
+    }));
+    setFilteredNotes(filteredNotes.filter((note: Note) => {
+      if (note.fileName === parentFileName) {
+        return note.replies.filter((reply: Note) => reply.fileName !== replyFileName);
+      }
+      return true;
+    }));
   };
 
   const startEditing = (fileName: string, content: string) => {
@@ -112,7 +134,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
           <div className={styles['note-date']}>{getRelativeTime(note.updatedAt)}</div>
         </div>
         <div className={`${styles['note-actions']} ${editingNote === note.fileName ? styles['editing'] : ''}`}>
-          <button onClick={() => deleteNote(note.fileName)}>
+          <button onClick={() => note.isReply ? deleteReply(note.parentFileName, note.fileName) : deleteNote(note.fileName)}>
             <Trash2 size={16} /> Delete
           </button>
           {editingNote === note.fileName ? (
