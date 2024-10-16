@@ -161,27 +161,27 @@ ipcMain.on('get-notes', (event) => {
 
 
 // Delete note
-ipcMain.on('delete-note', (event, fileName: string) => {
-    try {
-        const noteToDelete = metadataIndex.getNoteMetadata(fileName);
-        if (!noteToDelete) throw new Error('Note not found');
+// ipcMain.on('delete-note', (event, fileName: string) => {
+//     try {
+//         const noteToDelete = metadataIndex.getNoteMetadata(fileName);
+//         if (!noteToDelete) throw new Error('Note not found');
 
-        // Delete all replies first
-        const replies = noteToDelete.replies || [];
-        replies.forEach(replyFileName => {
-            metadataIndex.deleteNote(replyFileName);
-            fs.unlinkSync(path.join(notesPath, replyFileName)); 
-        });
+//         // Delete all replies first
+//         const replies = noteToDelete.replies || [];
+//         replies.forEach(replyFileName => {
+//             metadataIndex.deleteNote(replyFileName);
+//             fs.unlinkSync(path.join(notesPath, replyFileName)); 
+//         });
 
-        metadataIndex.deleteNote(fileName);
-        fs.unlinkSync(path.join(notesPath, fileName));
+//         metadataIndex.deleteNote(fileName);
+//         fs.unlinkSync(path.join(notesPath, fileName));
 
-        event.reply('delete-note-result', { success: true, fileName });
-    } catch (error) {
-        console.error('Failed to delete note:', error);
-        event.reply('delete-note-result', { success: false, error: error.message });
-    }
-});
+//         event.reply('delete-note-result', { success: true, fileName });
+//     } catch (error) {
+//         console.error('Failed to delete note:', error);
+//         event.reply('delete-note-result', { success: false, error: error.message });
+//     }
+// });
 
 // Delete reply
 ipcMain.on('delete-reply', (event, parentFileName: string, replyFileName: string) => {
@@ -317,3 +317,43 @@ ipcMain.on('get-note', (event, fileName: string) => {
     console.log('single note:', noteData);
     event.reply('note-data', noteData);
 });
+
+// invoke handlers ----------------------------------------------------------------
+
+ipcMain.handle('get-indexes', async (event) => {
+    return metadataIndex.getIndexes();
+});
+
+ipcMain.handle('get-parent-indexes', async (event) => {
+    return metadataIndex.getParentIndexes();
+});
+
+ipcMain.handle('get-content', async (event, fileName: string) => {
+    const note = metadataIndex.getNoteMetadata(fileName);
+    if (!note) {
+        console.error('Note not found:', fileName);
+        return null;
+    }
+    const content = metadataIndex.getContent(fileName);
+    return content;
+});
+
+ipcMain.handle('update-content', async (event, fileName: string, newContent: string) => {
+    const note = metadataIndex.getNoteMetadata(fileName);
+    if (!note) {
+        console.error('Note not found:', fileName);
+        return null;
+    }
+    const result = metadataIndex.updateContent(fileName, newContent);
+    return result;
+});
+
+ipcMain.handle('delete-note', async (event, fileName: string) => {
+    metadataIndex.deleteNote(fileName);
+});
+
+ipcMain.handle('update-note-metadata', async (event, fileName: string, metadata: Partial<NoteMetadata>) => {
+    const result = metadataIndex.updateNoteMetadata(fileName, metadata);
+    return result;
+});
+

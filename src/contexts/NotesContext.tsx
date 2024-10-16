@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import NoteIndex from '../utils/NoteIndex';
 
 interface Note {
     fileName: string;
@@ -9,8 +10,7 @@ interface Note {
 }
 
 interface NotesContextType {
-    notes: Note[];
-    setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
+    noteIndex: NoteIndex;
     filteredNotes: Note[];
     setFilteredNotes: React.Dispatch<React.SetStateAction<Note[]>>;
     searchQuery: string;
@@ -21,74 +21,64 @@ interface NotesContextType {
     setEditingNote: React.Dispatch<React.SetStateAction<string | null>>;
     editContent: string;
     setEditContent: React.Dispatch<React.SetStateAction<string>>;
+    notes: NoteWithReplies[];
+    setNotes: React.Dispatch<React.SetStateAction<NoteWithReplies[]>>;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
 
 export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [notes, setNotes] = useState<Note[]>([]);
+    const [noteIndex, setNoteIndex] = useState<NoteIndex | null>(null);
     const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [isSemanticSearch, setIsSemanticSearch] = useState(true);
     const [editingNote, setEditingNote] = useState<string | null>(null);
     const [editContent, setEditContent] = useState<string>('');
-
+    const [notes, setNotes] = useState<NoteWithReplies[]>([]);
     useEffect(() => {
-        const handleNotesData = (notesData: Note[]) => {
-            console.log('get-notes notesData:', notesData);
-            setNotes(notesData);
-            setFilteredNotes(notesData); // Initialize filtered notes
+        const initializeNoteIndex = async () => {
+            const indexes = await window.electron.ipcRenderer.invoke('get-parent-indexes');
+            const newNoteIndex = new NoteIndex(indexes);
+            setNoteIndex(newNoteIndex);
+            setNotes(newNoteIndex.getAllParentNotes());
+            console.log('noteIndex', newNoteIndex);
         };
 
-        window.electron.ipcRenderer.send('get-notes');
-        window.electron.ipcRenderer.on('notes-data', handleNotesData);
-
-        return () => {
-            window.electron.ipcRenderer.removeListener('notes-data', handleNotesData);
-        };
+        initializeNoteIndex();
     }, []);
 
     useEffect(() => {
-        const handleSaveResult = (newNote: Note) => {
-            console.log('new-note:', newNote);
-            setNotes((prevNotes) => [newNote, ...prevNotes]);
-            setFilteredNotes((prevNotes) => [newNote, ...prevNotes]);
-        };
-
-        window.electron.ipcRenderer.on('new-note', handleSaveResult);
-
-        return () => {
-            window.electron.ipcRenderer.removeListener('new-note', handleSaveResult);
-        };
-    }, []);
-
-    useEffect(() => {
-        const handleDeleteResult = (result: { success: boolean, fileName?: string, error?: string }) => {
-            if (result.success) {
-                setNotes((prevNotes) => prevNotes.filter(note => note.fileName !== result.fileName));
-                setFilteredNotes((prevNotes) => prevNotes.filter(note => note.fileName !== result.fileName));
-            } else {
-                console.error('Failed to delete note:', result.error);
+        const handleNewNote = async (newNote: Note) => {
+            if (noteIndex) {
+                await noteIndex.updateNoteMetadata(newNote.fileName, newNote);
+                setFilteredNotes(prevNotes => [newNote, ...prevNotes]);
             }
         };
 
-        window.electron.ipcRenderer.on('delete-note-result', handleDeleteResult);
+        window.electron.ipcRenderer.on('new-note', handleNewNote);
 
         return () => {
-            window.electron.ipcRenderer.removeListener('delete-note-result', handleDeleteResult);
+            window.electron.ipcRenderer.removeListener('new-note', handleNewNote);
         };
-    }, []);
+    }, [noteIndex]);
 
-    // handle delete reply
+
     useEffect(() => {
-        const handleDeleteReplyResult = (result: { success: boolean, parentFileName?: string, replyFileName?: string, error?: string }) => {
-            console.log('delete-reply-result:', result);
-            setNotes((prevNotes) => prevNotes.map((note: Note) => {
-                if (note.fileName === result.parentFileName) {
-                    return { ...note, replies: note.replies.filter((reply: Note) => reply.fileName !== result.replyFileName) };
+        const handleDeleteReplyResult = async (result: { success: boolean, parentFileName?: string, replyFileName?: string, error?: string }) => {
+            if (result.success && noteIndex && result.parentFileName && result.replyFileName) {
+                const parentNote = noteIndex.getNoteMetadata(result.parentFileName);
+                if (parentNote && parentNote.replies) {
+                    const updatedReplies = parentNote.replies.filter(reply => reply.fileName !== result.replyFileName);
+                    await noteIndex.updateNoteMetadata(result.parentFileName, { ...parentNote, replies: updatedReplies });
+                    setFilteredNotes(prevNotes => prevNotes.map(note => 
+                        note.fileName === result.parentFileName 
+                            ? { ...note, replies: updatedReplies } 
+                            : note
+                    ));
                 }
-                return note;
-            }));
+            } else {
+                console.error('Failed to delete reply:', result.error);
+            }
         };
 
         window.electron.ipcRenderer.on('delete-reply-result', handleDeleteReplyResult);
@@ -96,13 +86,17 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return () => {
             window.electron.ipcRenderer.removeListener('delete-reply-result', handleDeleteReplyResult);
         };
-    }, []);
+    }, [noteIndex]);
 
     useEffect(() => {
-        const handleUpdateResult = (result: { success: boolean, fileName?: string, updatedAt?: string, error?: string }) => {
-            if (result.success) {
-                setNotes((prevNotes) => prevNotes.map(note => note.fileName === result.fileName ? { ...note, content: editContent, updatedAt: result.updatedAt } : note));
-                setFilteredNotes((prevNotes) => prevNotes.map(note => note.fileName === result.fileName ? { ...note, content: editContent, updatedAt: result.updatedAt } : note));
+        const handleUpdateResult = async (result: { success: boolean, fileName?: string, updatedAt?: string, error?: string }) => {
+            if (result.success && noteIndex && result.fileName && result.updatedAt) {
+                await noteIndex.updateContent(result.fileName, editContent);
+                setFilteredNotes(prevNotes => prevNotes.map(note => 
+                    note.fileName === result.fileName 
+                        ? { ...note, content: editContent, updatedAt: result.updatedAt } 
+                        : note
+                ));
                 setEditingNote(null);
             } else {
                 console.error('Failed to update note:', result.error);
@@ -114,11 +108,10 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return () => {
             window.electron.ipcRenderer.removeListener('update-note-result', handleUpdateResult);
         };
-    }, [editContent]);
+    }, [noteIndex, editContent]);
 
     useEffect(() => {
         const handleSearchResults = (result: { success: boolean, notesData?: Note[], error?: string }) => {
-            console.log('search-result:', result);
             if (result.success) {
                 setFilteredNotes(result.notesData || []);
             } else {
@@ -133,10 +126,8 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         };
     }, []);
 
-
     const value = {
-        notes,
-        setNotes,
+        noteIndex: noteIndex as NoteIndex, // Type assertion here
         filteredNotes,
         setFilteredNotes,
         searchQuery,
@@ -147,6 +138,8 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setEditingNote,
         editContent,
         setEditContent,
+        notes,
+        setNotes,
     };
 
     return <NotesContext.Provider value={value}>{children}</NotesContext.Provider>;
@@ -159,4 +152,3 @@ export const useNotes = () => {
     }
     return context;
 };
-

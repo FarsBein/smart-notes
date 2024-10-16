@@ -10,6 +10,7 @@ interface Window {
             on(arg0: string, handleSaveResult: (event: any, result: any) => void): unknown;
             once(channel: string, func: (...args: any[]) => void): void;
             send(channel: string, ...args: any[]): void;
+            invoke(channel: string, ...args: any[]): Promise<any>;
         };
     };
 }
@@ -30,6 +31,9 @@ interface NoteMetadata {
     filePath: string;
 }
 
+interface NoteWithReplies extends NoteMetadata {
+    replies: (NoteMetadata | string)[];
+};
 
 interface Attachment {
     type: 'url' | 'image' | 'text' | 'code' | 'quote' | 'none';

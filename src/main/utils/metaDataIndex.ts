@@ -59,12 +59,15 @@ class MetadataIndex {
         this.saveEmbeddings();
     }
 
-    public updateNoteMetadata(fileName: string, metadata: Partial<NoteMetadata>): void {
+    public updateNoteMetadata(fileName: string, metadata: Partial<NoteMetadata>): string | null {
         if (this.index[fileName]) {
             this.index[fileName] = { ...this.index[fileName], ...metadata }; // pretty neat way to update only the changed properties
             this.saveIndex();
+            return fileName;
         }
+        return null;
     }
+
 
     public deleteNote(fileName: string): void {
         delete this.index[fileName];
@@ -73,6 +76,21 @@ class MetadataIndex {
         this.saveEmbeddings();
     }
     
+    public getIndexes(): Record<string, NoteMetadata> {
+        return this.index;
+    }
+
+    public getParentIndexes(): (NoteWithReplies)[] {
+        return Object.values(this.index).map(note => {
+                if (note.replies) {
+                    const replies = note.replies.map(reply => this.index[reply]);
+                    const noteWithReplies: NoteWithReplies = { ...note, replies };
+                    return noteWithReplies;
+                }
+                return
+            }).filter(note => note !== null).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+
     public getNotesMetadata(): NoteMetadata[] {
         return Object.values(this.index).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
@@ -85,7 +103,29 @@ class MetadataIndex {
         return this.index[fileName];
     }
 
+
+    public updateContent(fileName: string, newContent: string): string | null {
+        // switch to just concatenating new content to existing content
+        try {
+            const note = this.getNoteMetadata(fileName);
+            if (!note) throw new Error('Note not found');
+            let fullNoteContent = fs.readFileSync(note.filePath, 'utf-8');
+            const oldContent = fullNoteContent.replace(/^---[\s\S]*?---/, '').trim()
+            
+            // Update the note content
+            const updatedAt = new Date().toISOString();
+            fullNoteContent = fullNoteContent.replace(oldContent, newContent);
+            fs.writeFileSync(note.filePath, fullNoteContent);
     
+            // Update metadata
+            this.updateNoteMetadata(fileName, { updatedAt });
+    
+            return fileName;
+        } catch (error) {
+            console.error('Failed to update note:', error);
+            return null;
+        }
+    }
 
     public searchSimilarNotes(queryEmbedding: number[], threshold: number = 0.8): NoteMetadata[] {
         const similarNotes: NoteMetadata[] = [];
@@ -169,6 +209,17 @@ class MetadataIndex {
             note.title.toLowerCase().includes(lowercaseQuery) ||
             note.tags.some(tag => tag.toLowerCase().includes(lowercaseQuery))
         );
+    }
+
+    public getContent(fileName: string): string | null {
+        const note = this.getNoteMetadata(fileName);
+        if (!note) return null;
+        try {
+            return fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim();
+        } catch (error) {
+            console.error('Error reading note content:', error);
+            return null;
+        }
     }
 }
 

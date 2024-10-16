@@ -17,6 +17,9 @@ const electronHandler = {
     removeListener(channel: string, func: (...args: any[]) => void) {
       ipcRenderer.removeListener(channel, func);
     },
+    invoke(channel: string, ...args: any[]): Promise<any> {
+      return ipcRenderer.invoke(channel, ...args);
+    },
   },
 };
 

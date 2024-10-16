@@ -1,12 +1,13 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Trash2, Edit2, Save, X as Cancel } from 'lucide-react';
 import styles from './NotesFeed.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
+import NoteIndex from '@/utils/NoteIndex';
 
 interface NoteItemProps {
-  note: Note;
+  note: NoteWithReplies;
 }
 
 const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
@@ -15,32 +16,27 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
     setEditingNote,
     editContent,
     setEditContent,
-    setNotes,
-    notes,
-    setFilteredNotes,
-    filteredNotes
+    noteIndex,
+    setNotes
   } = useNotes();
+  const [content, setContent] = useState<string>('');
 
-  const deleteNote = (fileName: string) => {
-    window.electron.ipcRenderer.send('delete-note', fileName);
-    setNotes(notes.filter((note: Note) => note.fileName !== fileName));
-    setFilteredNotes(filteredNotes.filter((note: Note) => note.fileName !== fileName));
+  useEffect(() => {
+    noteIndex.getContent(note.fileName).then(content => {
+      setContent(content);
+    });
+  }, [noteIndex]);
+
+
+  const deleteNote = async (fileName: string) => {
+    await noteIndex.deleteNote(fileName);
+    setNotes(noteIndex.getAllParentNotes());
+    console.log('NoteItem deleteNote noteIndex', noteIndex);
   };
 
   const deleteReply = (parentFileName: string, replyFileName: string) => {
     window.electron.ipcRenderer.send('delete-reply', parentFileName, replyFileName);
-    setNotes(notes.filter((note: Note) => {
-      if (note.fileName === parentFileName) {
-        return note.replies.filter((reply: Note) => reply.fileName !== replyFileName);
-      }
-      return true;
-    }));
-    setFilteredNotes(filteredNotes.filter((note: Note) => {
-      if (note.fileName === parentFileName) {
-        return note.replies.filter((reply: Note) => reply.fileName !== replyFileName);
-      }
-      return true;
-    }));
+    noteIndex.deleteNote(replyFileName);
   };
 
   const startEditing = (fileName: string, content: string) => {
@@ -50,6 +46,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
 
   const saveEdit = (fileName: string) => {
     window.electron.ipcRenderer.send('update-note', fileName, editContent);
+    noteIndex.updateContent(fileName, editContent);
   };
 
   const renderAttachment = (attachment: string, index: number) => {
@@ -119,7 +116,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
           {editingNote === note.fileName ? (
             <MarkdownEditor content={editContent} setContent={setEditContent} />
           ) : (
-            <ReactMarkdown>{note.content}</ReactMarkdown>
+            <ReactMarkdown>{content}</ReactMarkdown>
           )}
         </div>
         {note.attachments && note.attachments.length > 0 && (
@@ -134,7 +131,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
           <div className={styles['note-date']}>{getRelativeTime(note.updatedAt)}</div>
         </div>
         <div className={`${styles['note-actions']} ${editingNote === note.fileName ? styles['editing'] : ''}`}>
-          <button onClick={() => note.isReply ? deleteReply(note.parentFileName, note.fileName) : deleteNote(note.fileName)}>
+          <button onClick={() => note.isReply ? deleteReply(note.fileName, note.fileName) : deleteNote(note.fileName)}>
             <Trash2 size={16} /> Delete
           </button>
           {editingNote === note.fileName ? (
@@ -147,7 +144,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
               </button>
             </>
           ) : (
-            <button onClick={() => startEditing(note.fileName, note.content)}>
+            <button onClick={() => startEditing(note.fileName, content)}>
               <Edit2 size={16} /> Edit
             </button>
           )}
