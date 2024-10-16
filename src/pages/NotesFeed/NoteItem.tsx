@@ -22,22 +22,27 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
   const [content, setContent] = useState<string>('');
 
   useEffect(() => {
-    noteIndex.getContent(note.fileName).then(content => {
-      setContent(content);
-    });
-  }, [noteIndex]);
+    async function fetchContent() {
+      try {
+        const noteContent = await window.electron.ipcRenderer.invoke('get-content', note.fileName);
+        setContent(noteContent);
+      } catch (error) {
+        console.error('Error fetching note content:', error);
+      }
+    }
+    fetchContent();
+  }, [note]);
 
 
   const deleteNote = async (fileName: string) => {
-    await noteIndex.deleteNote(fileName);
-    setNotes(noteIndex.getAllParentNotes());
-    console.log('NoteItem deleteNote noteIndex', noteIndex);
+    try {
+      await window.electron.ipcRenderer.invoke('delete-note', fileName);
+      setNotes(prevNotes => prevNotes.filter(note => note.fileName !== fileName));
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+    }
   };
 
-  const deleteReply = (parentFileName: string, replyFileName: string) => {
-    window.electron.ipcRenderer.send('delete-reply', parentFileName, replyFileName);
-    noteIndex.deleteNote(replyFileName);
-  };
 
   const startEditing = (fileName: string, content: string) => {
     setEditingNote(fileName);
@@ -131,7 +136,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
           <div className={styles['note-date']}>{getRelativeTime(note.updatedAt)}</div>
         </div>
         <div className={`${styles['note-actions']} ${editingNote === note.fileName ? styles['editing'] : ''}`}>
-          <button onClick={() => note.isReply ? deleteReply(note.fileName, note.fileName) : deleteNote(note.fileName)}>
+          <button onClick={() => deleteNote(note.fileName)}>
             <Trash2 size={16} /> Delete
           </button>
           {editingNote === note.fileName ? (

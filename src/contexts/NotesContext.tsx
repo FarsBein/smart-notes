@@ -35,6 +35,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const [editingNote, setEditingNote] = useState<string | null>(null);
     const [editContent, setEditContent] = useState<string>('');
     const [notes, setNotes] = useState<NoteWithReplies[]>([]);
+    
     useEffect(() => {
         const initializeNoteIndex = async () => {
             const indexes = await window.electron.ipcRenderer.invoke('get-parent-indexes');
