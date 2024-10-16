@@ -6,7 +6,7 @@ import NoteItem from './NoteItem';
 import { useActionButtons } from '../../contexts/ActionButtons';
 
 const NotesList: React.FC = () => {
-  const { notes } = useNotes();
+  const { notes, filteredNotes } = useNotes();
 
   if (!notes) {
     return <div>Loading notes...</div>;
@@ -14,7 +14,9 @@ const NotesList: React.FC = () => {
 
   return (
     <>
-      {notes.length > 0 ? notes.map((note: NoteWithReplies) => (
+      {
+      filteredNotes === null ? 
+      notes.map((note: NoteWithReplies) => ( 
         <React.Fragment key={note.fileName}>
           <NoteItem note={note} />
           {note.replies.map((reply, index) => (
@@ -24,7 +26,19 @@ const NotesList: React.FC = () => {
           ))}
           {/* <div className={styles['note-divider']}></div> */}
         </React.Fragment>
-      )) : <div>No notes found</div>}
+      ))
+      :
+      filteredNotes.map((note: NoteWithReplies) => (
+        <React.Fragment key={note.fileName}>
+          <NoteItem note={note} />
+          {note.replies.map((reply, index) => (
+            <React.Fragment key={index}>
+              <NoteItem note={reply as NoteWithReplies} />
+            </React.Fragment>
+          ))}
+          {/* <div className={styles['note-divider']}></div> */}
+        </React.Fragment>
+      ))}
     </>
   );
 };

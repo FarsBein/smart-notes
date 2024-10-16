@@ -4,25 +4,20 @@ import { Trash2, Edit2, Save, X as Cancel } from 'lucide-react';
 import styles from './NotesFeed.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
-import NoteIndex from '@/utils/NoteIndex';
 
 interface NoteItemProps {
   note: NoteWithReplies;
 }
 
-const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
-  const {
-    editingNote,
-    setEditingNote,
-    editContent,
-    setEditContent,
-    noteIndex,
-    setNotes
-  } = useNotes();
+const NoteItem: React.FC<NoteItemProps> = React.memo(({ note }) => {
+  const {setNotes} = useNotes();
+
   const [content, setContent] = useState<string>('');
+  const [editingNote, setEditingNote] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState<string>('');
 
   useEffect(() => {
-    async function fetchContent() {
+    async function getContent() {
       try {
         const noteContent = await window.electron.ipcRenderer.invoke('get-content', note.fileName);
         setContent(noteContent);
@@ -30,7 +25,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
         console.error('Error fetching note content:', error);
       }
     }
-    fetchContent();
+    getContent();
   }, [note]);
 
 
@@ -43,15 +38,19 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
     }
   };
 
-
   const startEditing = (fileName: string, content: string) => {
     setEditingNote(fileName);
     setEditContent(content);
   };
 
-  const saveEdit = (fileName: string) => {
-    window.electron.ipcRenderer.send('update-note', fileName, editContent);
-    noteIndex.updateContent(fileName, editContent);
+  const saveEdit = async (fileName: string) => {
+    try {
+      await window.electron.ipcRenderer.invoke('update-content', fileName, editContent);
+      setContent(editContent);
+      setEditingNote(null);
+    } catch (error) {
+      console.error('Failed to update note content:', error);
+    }
   };
 
   const renderAttachment = (attachment: string, index: number) => {
@@ -157,6 +156,6 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
       </div>
     </div>
   );
-};
+});
 
 export default NoteItem;

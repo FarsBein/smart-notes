@@ -1,33 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, Cone, X } from 'lucide-react';
 import styles from './NotesFeed.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 
 const SearchBar: React.FC = () => {
   const {
-    searchQuery,
-    setSearchQuery,
-    isSemanticSearch,
-    setIsSemanticSearch,
-    notes,
     setFilteredNotes,
   } = useNotes();
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isSemanticSearch, setIsSemanticSearch] = useState<boolean>(true);
 
   const handleSearch = () => {
     if (isSemanticSearch) {
-      window.electron.ipcRenderer.send('search-notes', searchQuery);
+      window.electron.ipcRenderer.send('semantic-search', searchQuery);
     } else {
-      const lowerCaseQuery = searchQuery.toLowerCase();
-      const filtered = notes.filter(note =>
-        note.content.toLowerCase().includes(lowerCaseQuery)
-      );
-      setFilteredNotes(filtered);
+      // TODO FIX 
+      // const lowerCaseQuery = searchQuery.toLowerCase();
+      // const filtered = notes.filter(note =>
+      //   note.content.toLowerCase().includes(lowerCaseQuery)
+      // );
+      // setFilteredNotes(filtered);
+      setFilteredNotes(null);
     }
   };
 
   const exitSearch = () => {
     setSearchQuery('');
-    setFilteredNotes(notes);
+    setFilteredNotes(null);
   };
 
   return (

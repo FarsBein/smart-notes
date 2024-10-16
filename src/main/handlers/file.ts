@@ -239,7 +239,7 @@ ipcMain.on('update-note', async (event, fileName: string, newContent: string) =>
 
 
 // Search notes
-ipcMain.on('search-notes', async (event, searchQuery: string) => {
+ipcMain.on('semantic-search', async (event, searchQuery: string) => {
     try {
         const queryEmbedding = await generateEmbedding(searchQuery);
         const similarNotes = metadataIndex.searchSimilarNotes(queryEmbedding);
@@ -271,9 +271,9 @@ ipcMain.on('search-notes', async (event, searchQuery: string) => {
                 isReply: note.isReply
             }
         });
-        event.reply('search-result', { success: true, notesData });
+        event.reply('semantic-search-result', { success: true, notesData });
     } catch (err) {
-        event.reply('search-result', { success: false, error: err.message });
+        event.reply('semantic-search-result', { success: false, error: err.message });
     }
 });
 
