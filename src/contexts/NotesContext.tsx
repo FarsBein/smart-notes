@@ -13,6 +13,8 @@ interface NotesContextType {
     setFilteredNotes: React.Dispatch<React.SetStateAction<NoteWithReplies[] | null>>;
     notes: NoteWithReplies[];
     setNotes: React.Dispatch<React.SetStateAction<NoteWithReplies[]>>;
+    basicSearchQuery: string;
+    setBasicSearchQuery: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -21,7 +23,8 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     const [notes, setNotes] = useState<NoteWithReplies[]>(null);
     const [filteredNotes, setFilteredNotes] = useState<NoteWithReplies[] | null>(null);
-
+    const [basicSearchQuery, setBasicSearchQuery] = useState<string>('');
+    
     useEffect(() => {
         const initializeNoteIndex = async () => {
             const indexes = await window.electron.ipcRenderer.invoke('get-parent-indexes');
@@ -64,6 +67,8 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setFilteredNotes,
         notes,
         setNotes,
+        basicSearchQuery,
+        setBasicSearchQuery,
     };
 
     return <NotesContext.Provider value={value}>{children}</NotesContext.Provider>;

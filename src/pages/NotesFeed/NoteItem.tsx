@@ -10,7 +10,7 @@ interface NoteItemProps {
 }
 
 const NoteItem: React.FC<NoteItemProps> = React.memo(({ note }) => {
-  const {setNotes} = useNotes();
+  const {setNotes, basicSearchQuery} = useNotes();
 
   const [content, setContent] = useState<string>('');
   const [editingNote, setEditingNote] = useState<string | null>(null);
@@ -27,7 +27,6 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ note }) => {
     }
     getContent();
   }, [note]);
-
 
   const deleteNote = async (fileName: string) => {
     try {
@@ -109,6 +108,11 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ note }) => {
 
     return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
   };
+
+
+  if (basicSearchQuery && content && !content.toLowerCase().includes(basicSearchQuery.toLowerCase())) {
+    return null;
+  }
 
   return (
     <div className={styles['notes-container']}>

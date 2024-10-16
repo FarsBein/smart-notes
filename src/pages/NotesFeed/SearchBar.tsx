@@ -6,6 +6,8 @@ import { useNotes } from '../../contexts/NotesContext';
 const SearchBar: React.FC = () => {
   const {
     setFilteredNotes,
+    setBasicSearchQuery,
+    notes,
   } = useNotes();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSemanticSearch, setIsSemanticSearch] = useState<boolean>(true);
@@ -14,13 +16,8 @@ const SearchBar: React.FC = () => {
     if (isSemanticSearch) {
       window.electron.ipcRenderer.send('semantic-search', searchQuery);
     } else {
-      // TODO FIX 
-      // const lowerCaseQuery = searchQuery.toLowerCase();
-      // const filtered = notes.filter(note =>
-      //   note.content.toLowerCase().includes(lowerCaseQuery)
-      // );
-      // setFilteredNotes(filtered);
-      setFilteredNotes(null);
+      const lowerCaseQuery = searchQuery.toLowerCase();
+      setBasicSearchQuery(lowerCaseQuery);
     }
   };
 
