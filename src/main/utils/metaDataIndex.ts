@@ -186,12 +186,28 @@ class MetadataIndex {
 
         this.embeddings[metadata.fileName] = embedding;
         this.saveEmbeddings();
+    }
 
-        // update the file with new frontmatter
-        const newFrontmatter = this.toFrontmatterString(metadata.fileName);
-        const content = fs.readFileSync(metadata.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim();
-        const newContent = newFrontmatter + content;
-        fs.writeFileSync(metadata.filePath, newContent);
+    public addReply(metadata: NoteMetadata, embedding: number[]): void {
+        this.index.replies[metadata.fileName] = metadata;
+        this.index.notes[metadata.parentFileName].replies.push(metadata.fileName);
+        this.saveIndex();
+
+        this.embeddings[metadata.fileName] = embedding;
+        this.saveEmbeddings();
+    }
+
+    public updateMetadata(fileName: string, metadata: Partial<NoteMetadata>): string | null {
+        if (this.index.notes[fileName]) {
+            this.index.notes[fileName] = { ...this.index.notes[fileName], ...metadata };
+            this.saveIndex();
+            return fileName;
+        } else if (this.index.replies[fileName]) {
+            this.index.replies[fileName] = { ...this.index.replies[fileName], ...metadata };
+            this.saveIndex();
+            return fileName;
+        }
+        return null;
     }
 
     public searchSimilarNotes(queryEmbedding: number[], threshold: number = 0.8): string[] {
