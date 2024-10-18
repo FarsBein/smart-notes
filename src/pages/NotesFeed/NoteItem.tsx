@@ -35,7 +35,6 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
   }, [fileName]);
 
   const deleteNote = async (fileName: string, isReply: boolean) => {
-    console.log('Deleting note:', fileName, isReply);
     try {
       if (isReply) {
         await window.electron.ipcRenderer.invoke('delete-reply', fileName);

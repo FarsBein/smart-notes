@@ -174,8 +174,6 @@ class MetadataIndex {
 
     public deleteReply(fileName: string): void {
         if (this.index.replies[fileName]) {
-            console.log('Deleting reply:', fileName);
-
             try {
                 fs.unlinkSync(this.index.replies[fileName].filePath);
             } catch (error) {
@@ -242,7 +240,6 @@ class MetadataIndex {
         return similarNotes;
     }
 
-
     public updateNoteMetadata(fileName: string, metadata: Partial<NoteMetadata>): string | null {
         if (this.index.notes[fileName]) {
             this.index.notes[fileName] = { ...this.index.notes[fileName], ...metadata }; // pretty neat way to update only the changed properties
@@ -275,7 +272,7 @@ class MetadataIndex {
             `---\n`;
     }
 
-    // unused for now ---------------------------------------------------------------
+    // unused ---------------------------------------------------------------
     public getNoteContent(fileName: string): string | null {
         const note = this.getMetadata(fileName);
         if (!note) return null;
