@@ -12,9 +12,10 @@ const SearchBar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSemanticSearch, setIsSemanticSearch] = useState<boolean>(true);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (isSemanticSearch) {
-      window.electron.ipcRenderer.send('semantic-search', searchQuery);
+      const similarNotes = await window.electron.ipcRenderer.invoke('semantic-search', searchQuery);
+      setFilteredParentNotesFileNames(similarNotes);
     } else {
       const lowerCaseQuery = searchQuery.toLowerCase();
       setBasicSearchQuery(lowerCaseQuery);

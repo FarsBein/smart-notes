@@ -155,6 +155,9 @@ class MetadataIndex {
             delete this.index.notes[fileName];
             this.index.noteList = this.index.noteList.filter(file => file !== fileName);
             this.saveIndex();
+
+            delete this.embeddings[fileName];
+            this.saveEmbeddings();
         }
     }
 
@@ -170,6 +173,9 @@ class MetadataIndex {
             const parentFileName = this.index.replies[fileName].parentFileName;
             this.index.notes[parentFileName].replies = this.index.notes[parentFileName].replies.filter(replyFileName => replyFileName !== fileName);
             this.saveIndex();
+
+            delete this.embeddings[fileName];
+            this.saveEmbeddings();
         }
     }
 
@@ -187,6 +193,25 @@ class MetadataIndex {
         const newContent = newFrontmatter + content;
         fs.writeFileSync(metadata.filePath, newContent);
     }
+
+
+    public searchSimilarNotes(queryEmbedding: number[], threshold: number = 0.8): string[] {
+        const similarNotes: string[] = [];
+
+        for (const [fileName, embedding] of Object.entries(this.embeddings)) {
+            const similarity = cosineSimilarity(queryEmbedding, embedding);
+            if (similarity >= threshold) {
+                if (this.index.replies[fileName]) {
+                    similarNotes.push(this.index.replies[fileName].parentFileName);
+                } else {
+                    similarNotes.push(fileName);
+                }
+            }
+        }
+
+        return similarNotes;
+    }
+
 
     public updateNoteMetadata(fileName: string, metadata: Partial<NoteMetadata>): string | null {
         if (this.index.notes[fileName]) {
@@ -229,23 +254,7 @@ class MetadataIndex {
     }
 
     
-
-    public searchSimilarNotes(queryEmbedding: number[], threshold: number = 0.8): NoteMetadata[] {
-        const similarNotes: NoteMetadata[] = [];
-
-        for (const [fileName, embedding] of Object.entries(this.embeddings)) {
-            const similarity = cosineSimilarity(queryEmbedding, embedding);
-            if (similarity >= threshold) {
-                const noteMetadata = this.getNoteMetadata(fileName);
-                if (noteMetadata) {
-                    similarNotes.push(noteMetadata);
-                }
-            }
-        }
-
-        return similarNotes;
-    }
-
+    
     // unused for now ---------------------------------------------------------------
     public getNoteContent(fileName: string): string | null {
         const note = this.getNoteMetadata(fileName);

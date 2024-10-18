@@ -217,45 +217,6 @@ ipcMain.on('update-note', async (event, fileName: string, newContent: string) =>
 });
 
 
-// Search notes
-ipcMain.on('semantic-search', async (event, searchQuery: string) => {
-    try {
-        const queryEmbedding = await generateEmbedding(searchQuery);
-        const similarNotes = metadataIndex.searchSimilarNotes(queryEmbedding);
-        const notesData: Note[] = similarNotes.map(note => {
-            const replies = note.replies.map(replyFileName => {
-                const replyMetadata = metadataIndex.getNoteMetadata(replyFileName);
-                return {
-                    fileName: replyMetadata.fileName,
-                    content: fs.readFileSync(replyMetadata.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
-                    createdAt: replyMetadata.createdAt,
-                    updatedAt: replyMetadata.updatedAt,
-                    attachments: replyMetadata.attachments,
-                    parentFileName: note.fileName,
-                    tags: replyMetadata.tags,
-                    replies: [] as Note[],
-                    isReply: replyMetadata.isReply
-                };
-            });
-    
-            return {
-                fileName: note.fileName,
-                content: fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim(),
-                createdAt: note.createdAt,
-                updatedAt: note.updatedAt,
-                attachments: note.attachments,
-                parentFileName: '',
-                tags: note.tags,
-                replies: replies,
-                isReply: note.isReply
-            }
-        });
-        event.reply('semantic-search-result', { success: true, notesData });
-    } catch (err) {
-        event.reply('semantic-search-result', { success: false, error: err.message });
-    }
-});
-
 // not used for now ----------------------------------------------------------------
 // Get single note
 ipcMain.on('get-note', (event, fileName: string) => {
@@ -317,16 +278,6 @@ ipcMain.handle('get-content', async (event, fileName: string) => {
     return content;
 });
 
-ipcMain.handle('get-all-info', async (event, fileName: string) => {
-    const metadata = metadataIndex.getMetadata(fileName);
-    if (!metadata) {
-        console.error('Note not found:', fileName);
-        return null;
-    }
-    const content = metadataIndex.getContent(fileName);
-    return { metadata, content };
-});
-
 ipcMain.handle('update-content', async (event, fileName: string, newContent: string) => {
     const note = metadataIndex.getNoteMetadata(fileName);
     if (!note) {
@@ -344,6 +295,16 @@ ipcMain.handle('update-note-metadata', async (event, fileName: string, metadata:
 
 
 // updated
+ipcMain.handle('get-all-info', async (event, fileName: string) => {
+    const metadata = metadataIndex.getMetadata(fileName);
+    if (!metadata) {
+        console.error('Note not found:', fileName);
+        return null;
+    }
+    const content = metadataIndex.getContent(fileName);
+    return { metadata, content };
+});
+
 ipcMain.handle('get-parent-notes-file-names', async (event) => {
     return metadataIndex.getParentNotesFileNames();
 });
@@ -364,4 +325,15 @@ ipcMain.handle('delete-note', async (event, fileName: string) => {
 
 ipcMain.handle('delete-reply', async (event, fileName: string) => {
     metadataIndex.deleteReply(fileName);
+});
+
+ipcMain.handle('semantic-search', async (event, searchQuery: string) => {
+    try {
+        const queryEmbedding = await generateEmbedding(searchQuery);
+        const similarNotes = metadataIndex.searchSimilarNotes(queryEmbedding);
+        return similarNotes;
+    } catch (err) {
+        console.error('Failed to semantic search:', err);
+        return null;
+    }
 });
