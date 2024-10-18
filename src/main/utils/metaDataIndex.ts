@@ -152,6 +152,17 @@ class MetadataIndex {
                 console.error('Error deleting note:', error);
                 return;
             }
+            // delete all replies to this note
+            this.index.notes[fileName].replies.forEach(reply => {
+                try {
+                    fs.unlinkSync(this.index.replies[reply].filePath);
+                } catch (error) {
+                    console.error('Error deleting reply:', error);
+                }
+                delete this.index.replies[fileName];
+                delete this.embeddings[fileName];
+            });
+
             delete this.index.notes[fileName];
             this.index.noteList = this.index.noteList.filter(file => file !== fileName);
             this.saveIndex();
@@ -163,19 +174,23 @@ class MetadataIndex {
 
     public deleteReply(fileName: string): void {
         if (this.index.replies[fileName]) {
+            console.log('Deleting reply:', fileName);
+
             try {
                 fs.unlinkSync(this.index.replies[fileName].filePath);
             } catch (error) {
                 console.error('Error deleting reply:', error);
                 return;
             }
-            delete this.index.replies[fileName];
             const parentFileName = this.index.replies[fileName].parentFileName;
             this.index.notes[parentFileName].replies = this.index.notes[parentFileName].replies.filter(replyFileName => replyFileName !== fileName);
+            delete this.index.replies[fileName];
             this.saveIndex();
 
             delete this.embeddings[fileName];
             this.saveEmbeddings();
+        } else {
+            console.error('Reply not found:', fileName);
         }
     }
 

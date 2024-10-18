@@ -1,9 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Trash2, Edit2, Save, X as Cancel } from 'lucide-react';
+import { Trash2, Edit2, Save, X as Cancel, MessageSquare } from 'lucide-react';
 import styles from './NotesFeed.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
+import ReplyItem from './ReplyItem';
 
 interface NoteItemProps {
   fileName: string;
@@ -16,6 +17,8 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editContent, setEditContent] = useState<string>('');
   const [metadata, setMetadata] = useState<NoteMetadata | null>(null);
+  const [isReplying, setIsReplying] = useState(false);
+  const [replyContent, setReplyContent] = useState('');
 
   useEffect(() => {
     async function getContent() {
@@ -31,9 +34,10 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
     getContent();
   }, [fileName]);
 
-  const deleteNote = async (fileName: string) => {
+  const deleteNote = async (fileName: string, isReply: boolean) => {
+    console.log('Deleting note:', fileName, isReply);
     try {
-      if (metadata.isReply) {
+      if (isReply) {
         await window.electron.ipcRenderer.invoke('delete-reply', fileName);
         setMetadata(prevMetadata => ({ ...prevMetadata, replies: prevMetadata.replies.filter(replyFileName => replyFileName !== fileName) }));
       } else {
@@ -121,6 +125,27 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
     return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
   };
 
+  const startReplying = () => {
+    setIsReplying(true);
+  };
+
+  const cancelReply = () => {
+    setIsReplying(false);
+    setReplyContent('');
+  };
+
+  const addReply = async (replyContent: string) => {
+    console.log('Adding reply:', replyContent);
+    try {
+      const newReplyFileName = await window.electron.ipcRenderer.invoke('save-reply', replyContent, [], fileName);
+      setMetadata(prevMetadata => ({
+        ...prevMetadata,
+        replies: [...(prevMetadata?.replies || []), newReplyFileName]
+      }));
+    } catch (error) {
+      console.error('Failed to create reply:', error);
+    }
+  };
 
   if (basicSearchQuery && content && !content.toLowerCase().includes(basicSearchQuery.toLowerCase())) {
     return null;
@@ -131,6 +156,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
       <div className={styles['notes-container']}>
         <div className={styles['note-legend']}>
           <div className={styles['note-legend-dot']} />
+          {metadata?.replies?.length > 0 ? <div className={styles['note-legend-line']} /> : null}
         </div>
         <div className={styles['note-content']}>
           <div className={styles['note-content-text']}>
@@ -146,7 +172,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
             <div className={styles['note-date']}>{getRelativeTime(metadata?.updatedAt)}</div>
           </div>
           <div className={`${styles['note-actions']} ${editingNote === fileName ? styles['editing'] : ''}`}>
-            <button onClick={() => deleteNote(fileName)}>
+            <button onClick={() => deleteNote(fileName, metadata?.isReply)}>
               <Trash2 size={16} /> Delete
             </button>
             {editingNote === fileName ? (
@@ -163,12 +189,37 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
                 <Edit2 size={16} /> Edit
               </button>
             )}
+            {!metadata?.isReply && !editingNote && (
+              <button onClick={startReplying}>
+                <MessageSquare size={16} /> Reply
+              </button>
+            )}
           </div>
+          {isReplying && (
+            <div className={styles['reply-container']}>
+              <MarkdownEditor content={replyContent} setContent={setReplyContent} />
+              <div className={styles['reply-actions']}>
+                <button onClick={() => { addReply(replyContent); setIsReplying(false); setReplyContent(''); }}>
+                  <Save size={16} /> Submit Reply
+                </button>
+                <button onClick={cancelReply}>
+                  <Cancel size={16} /> Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-      {metadata?.replies?.map((replyFileName: string) => (
-          <NoteItem key={replyFileName} fileName={replyFileName} />
-        ))}
+      {metadata?.replies?.map((replyFileName: string, index: number) => (
+        <ReplyItem 
+          key={replyFileName} 
+          fileName={replyFileName} 
+          parentFileName={fileName}
+          deleteNote={deleteNote}
+          isLast={index === metadata.replies.length - 1}
+          addReply={addReply}
+        />
+      ))}
     </>
   );
 });
