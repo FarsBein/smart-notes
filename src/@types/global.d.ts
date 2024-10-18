@@ -24,16 +24,13 @@ interface NoteMetadata {
     highlight: string | null;
     highlightColor: string | null;
     tags: string[];
-    replies: string[];
     attachments: string[];
+    parentFileName: string;
+    replies: string[];
     isReply: boolean;
     isAI: boolean;
     filePath: string;
 }
-
-interface NoteWithReplies extends NoteMetadata {
-    replies: (NoteMetadata | string)[];
-};
 
 interface Attachment {
     type: 'url' | 'image' | 'text' | 'code' | 'quote' | 'none';

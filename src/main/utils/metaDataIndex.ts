@@ -1,10 +1,57 @@
 import fs from 'fs';
 import { cosineSimilarity } from '../utils/embeddings';
 
+// multi line comment
+/*
+    the structure of the metadata index is as follows:
+    {
+    "notes": {
+        "xxxxxx-xxxxxx": {
+        "id": "xxxxxx-xxxxxx",
+        "filePath": "C:\\Users\\Fars\\Documents\\MyNotes\\xxxxxx-xxxxxx.md",
+        "createdAt": "xxxxxx-xxxxxx",
+        "updatedAt": "xxxxxx-xxxxxx",
+        "highlight": null,
+        "highlightColor": null,
+        "tags": [],
+        "attachments": [],
+        "replies": ["xxxxxx-xxxxxx"],
+        "parentFileName": "",
+        "isReply": false,
+        "isAI": false
+        }
+    },
+    "replies": {
+        "xxxxxx-xxxxxx": {
+        "id": "xxxxxx-xxxxxx",
+        "filePath": "C:\\Users\\Fars\\Documents\\MyNotes\\xxxxxx-xxxxxx.md",
+        "createdAt": "xxxxxx-xxxxxx",
+        "updatedAt": "xxxxxx-xxxxxx",
+        "highlight": null,
+        "highlightColor": null,
+        "tags": [],
+        "attachments": [],
+        "parentFileName": "xxxxxx-xxxxxx",
+        "replies": ["xxxxxx-xxxxxx"],
+        "isReply": true,
+        "isAI": false
+        }
+    },
+    "noteList": ["xxxxxx-xxxxxx"] // has notes filenames (no replies)
+    }
+*/
+interface Index {  
+    notes: Record<string, NoteMetadata>;
+    replies: Record<string, NoteMetadata>;
+    noteList: string[];
+}
+
 class MetadataIndex {
     private indexPath: string;
     private embeddingsPath: string;
-    private index: Record<string, NoteMetadata>;
+    // create a type for the index base on the json structure
+    
+    private index: Index;
     private embeddings: Record<string, number[]>;
 
     constructor(indexPath: string, embeddingsPath: string) {
@@ -14,13 +61,13 @@ class MetadataIndex {
         this.embeddings = this.loadEmbeddings();
     }
 
-    private loadIndex(): Record<string, NoteMetadata> {
+    private loadIndex(): Index {
         try {
             const data = fs.readFileSync(this.indexPath, 'utf-8');
             return JSON.parse(data);
         } catch (error) {
             console.error('Error loading index:', error);
-            return {};
+            return { notes: {}, replies: {}, noteList: [] };
         }
     }
 
@@ -50,62 +97,32 @@ class MetadataIndex {
         }
     }
 
-
-    public addNote(metadata: NoteMetadata, embedding: number[]): void {
-        this.index[metadata.fileName] = metadata; 
-        this.saveIndex();
-
-        this.embeddings[metadata.fileName] = embedding;
-        this.saveEmbeddings();
+    public getParentNotesFileNames(): string[] {
+        return this.index.noteList;
     }
 
-    public updateNoteMetadata(fileName: string, metadata: Partial<NoteMetadata>): string | null {
-        if (this.index[fileName]) {
-            this.index[fileName] = { ...this.index[fileName], ...metadata }; // pretty neat way to update only the changed properties
+    public updateReplyContent(fileName: string, newContent: string): string | null {
+        if (this.index.replies[fileName]) {
+            this.updateContent(fileName, newContent);
             this.saveIndex();
             return fileName;
-        }
+        } 
+        console.error('Reply not found:', fileName);
         return null;
     }
 
-
-    public deleteNote(fileName: string): void {
-        delete this.index[fileName];
-        delete this.embeddings[fileName];
-        this.saveIndex();
-        this.saveEmbeddings();
+    public updateNoteContent(fileName: string, newContent: string): string | null {
+        if (this.index.notes[fileName]) {
+            this.updateContent(fileName, newContent);
+            this.saveIndex();
+            return fileName;
+        } 
+        console.error('Note not found:', fileName);
+        return null;
     }
-    
-    public getIndexes(): Record<string, NoteMetadata> {
-        return this.index;
-    }
-
-    public getParentIndexes(): (NoteWithReplies)[] {
-        return Object.values(this.index).map(note => {
-                if (note.replies) {
-                    const replies = note.replies.map(reply => this.index[reply]);
-                    const noteWithReplies: NoteWithReplies = { ...note, replies };
-                    return noteWithReplies;
-                }
-                return
-            }).filter(note => note !== null).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }
-
-    public getNotesMetadata(): NoteMetadata[] {
-        return Object.values(this.index).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }
-
-    public getParentNotesMetadata(): NoteMetadata[] {
-        return Object.values(this.index).filter(note => !note.isReply).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }
-
-    public getNoteMetadata(fileName: string): NoteMetadata | undefined {
-        return this.index[fileName];
-    }
-
 
     public updateContent(fileName: string, newContent: string): string | null {
-        // switch to just concatenating new content to existing content
+        // TODO: switch to just concatenating new content to existing frontmatter
         try {
             const note = this.getNoteMetadata(fileName);
             if (!note) throw new Error('Note not found');
@@ -126,6 +143,92 @@ class MetadataIndex {
             return null;
         }
     }
+
+    public deleteNote(fileName: string): void {
+        if (this.index.notes[fileName]) {
+            try {
+                fs.unlinkSync(this.index.notes[fileName].filePath);
+            } catch (error) {
+                console.error('Error deleting note:', error);
+                return;
+            }
+            delete this.index.notes[fileName];
+            this.index.noteList = this.index.noteList.filter(file => file !== fileName);
+            this.saveIndex();
+        }
+    }
+
+    public deleteReply(fileName: string): void {
+        if (this.index.replies[fileName]) {
+            try {
+                fs.unlinkSync(this.index.replies[fileName].filePath);
+            } catch (error) {
+                console.error('Error deleting reply:', error);
+                return;
+            }
+            delete this.index.replies[fileName];
+            const parentFileName = this.index.replies[fileName].parentFileName;
+            this.index.notes[parentFileName].replies = this.index.notes[parentFileName].replies.filter(replyFileName => replyFileName !== fileName);
+            this.saveIndex();
+        }
+    }
+
+    public addNote(metadata: NoteMetadata, embedding: number[]): void {
+        this.index.notes[metadata.fileName] = metadata; 
+        this.index.noteList.push(metadata.fileName);
+        this.saveIndex();
+
+        this.embeddings[metadata.fileName] = embedding;
+        this.saveEmbeddings();
+
+        // update the file with new frontmatter
+        const newFrontmatter = this.toFrontmatterString(metadata.fileName);
+        const content = fs.readFileSync(metadata.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim();
+        const newContent = newFrontmatter + content;
+        fs.writeFileSync(metadata.filePath, newContent);
+    }
+
+    public updateNoteMetadata(fileName: string, metadata: Partial<NoteMetadata>): string | null {
+        if (this.index.notes[fileName]) {
+            this.index.notes[fileName] = { ...this.index.notes[fileName], ...metadata }; // pretty neat way to update only the changed properties
+            this.saveIndex();
+            return fileName;
+        }
+        return null;
+    }
+    
+    public getIndexes(): Index {
+        return this.index;
+    }
+
+    public getParentIndexes(): (NoteMetadata)[] {
+        return Object.values(this.index.notes).map(note => {
+                if (note.replies) {
+                    const replies = note.replies.map(reply => this.index.replies[reply].fileName);
+                    const NoteMetadata: NoteMetadata = { ...note, replies: replies };
+                    return NoteMetadata;
+                }
+                return note;
+            }).filter(note => note !== null).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+
+    public getNotesMetadata(): NoteMetadata[] {
+        return Object.values(this.index.notes).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+
+    public getParentNotesMetadata(): NoteMetadata[] {
+        return Object.values(this.index.notes).filter(note => !note.isReply).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+
+    public getNoteMetadata(fileName: string): NoteMetadata | undefined {
+        return this.index.notes[fileName];
+    }
+
+    public getMetadata(fileName: string): NoteMetadata | undefined {
+        return this.index.notes[fileName] || this.index.replies[fileName];
+    }
+
+    
 
     public searchSimilarNotes(queryEmbedding: number[], threshold: number = 0.8): NoteMetadata[] {
         const similarNotes: NoteMetadata[] = [];
@@ -163,6 +266,7 @@ class MetadataIndex {
             `tags: [${note.tags.join(', ')}]\n` +
             `replies: [${note.replies.join(', ')}]\n` +
             `attachments: [${note.attachments.join(', ')}]\n` +
+            `parentFileName: ${note.parentFileName}\n` +
             `isReply: ${note.isReply}\n` +
             `isAI: ${note.isAI}\n` +
             `---\n`;
@@ -205,7 +309,7 @@ class MetadataIndex {
 
     public searchTagsAndTitles(query: string): NoteMetadata[] {
         const lowercaseQuery = query.toLowerCase();
-        return Object.values(this.index).filter(note =>
+        return Object.values(this.index.notes).filter(note =>
             note.title.toLowerCase().includes(lowercaseQuery) ||
             note.tags.some(tag => tag.toLowerCase().includes(lowercaseQuery))
         );

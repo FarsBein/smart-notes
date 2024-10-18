@@ -67,6 +67,7 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
             tags: [],
             attachments: processedAttachments,
             replies: [],
+            parentFileName: '',
             isReply: isReply,
             isAI: false,
             filePath
@@ -80,8 +81,9 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
             `highlight: ${metadata.highlight}\n` +
             `highlightColor: ${metadata.highlightColor}\n` +
             `tags: [${metadata.tags.join(', ')}]\n` +
-            `replies: [${metadata.replies.join(', ')}]\n` +
             `attachments: [${metadata.attachments.join(', ')}]\n` +
+            `parentFileName: ${metadata.parentFileName}\n` +
+            `replies: [${metadata.replies.join(', ')}]\n` +
             `isReply: ${metadata.isReply}\n` +
             `isAI: ${metadata.isAI}\n` +
             `---\n`;
@@ -113,7 +115,7 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
                     isReply: isReply
                 };
 
-                mainWindow.webContents.send('new-note', newNote);
+                mainWindow.webContents.send('new-note', fileName);
             }
         });
     } catch (error) {
@@ -159,29 +161,6 @@ ipcMain.on('get-notes', (event) => {
     event.reply('notes-data', notesData);
 });
 
-
-// Delete note
-// ipcMain.on('delete-note', (event, fileName: string) => {
-//     try {
-//         const noteToDelete = metadataIndex.getNoteMetadata(fileName);
-//         if (!noteToDelete) throw new Error('Note not found');
-
-//         // Delete all replies first
-//         const replies = noteToDelete.replies || [];
-//         replies.forEach(replyFileName => {
-//             metadataIndex.deleteNote(replyFileName);
-//             fs.unlinkSync(path.join(notesPath, replyFileName)); 
-//         });
-
-//         metadataIndex.deleteNote(fileName);
-//         fs.unlinkSync(path.join(notesPath, fileName));
-
-//         event.reply('delete-note-result', { success: true, fileName });
-//     } catch (error) {
-//         console.error('Failed to delete note:', error);
-//         event.reply('delete-note-result', { success: false, error: error.message });
-//     }
-// });
 
 // Delete reply
 ipcMain.on('delete-reply', (event, parentFileName: string, replyFileName: string) => {
@@ -338,6 +317,16 @@ ipcMain.handle('get-content', async (event, fileName: string) => {
     return content;
 });
 
+ipcMain.handle('get-all-info', async (event, fileName: string) => {
+    const metadata = metadataIndex.getMetadata(fileName);
+    if (!metadata) {
+        console.error('Note not found:', fileName);
+        return null;
+    }
+    const content = metadataIndex.getContent(fileName);
+    return { metadata, content };
+});
+
 ipcMain.handle('update-content', async (event, fileName: string, newContent: string) => {
     const note = metadataIndex.getNoteMetadata(fileName);
     if (!note) {
@@ -348,12 +337,31 @@ ipcMain.handle('update-content', async (event, fileName: string, newContent: str
     return result;
 });
 
-ipcMain.handle('delete-note', async (event, fileName: string) => {
-    metadataIndex.deleteNote(fileName);
-});
-
 ipcMain.handle('update-note-metadata', async (event, fileName: string, metadata: Partial<NoteMetadata>) => {
     const result = metadataIndex.updateNoteMetadata(fileName, metadata);
     return result;
 });
 
+
+// updated
+ipcMain.handle('get-parent-notes-file-names', async (event) => {
+    return metadataIndex.getParentNotesFileNames();
+});
+
+ipcMain.handle('update-reply-content', async (event, fileName: string, newContent: string) => {
+    const result = metadataIndex.updateReplyContent(fileName, newContent);
+    return result;
+});
+
+ipcMain.handle('update-note-content', async (event, fileName: string, newContent: string) => {
+    const result = metadataIndex.updateNoteContent(fileName, newContent);
+    return result;
+});
+
+ipcMain.handle('delete-note', async (event, fileName: string) => {
+    metadataIndex.deleteNote(fileName);
+});
+
+ipcMain.handle('delete-reply', async (event, fileName: string) => {
+    metadataIndex.deleteReply(fileName);
+});

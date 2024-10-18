@@ -6,32 +6,40 @@ import { useNotes } from '../../contexts/NotesContext';
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
 
 interface NoteItemProps {
-  note: NoteWithReplies;
+  fileName: string;
 }
 
-const NoteItem: React.FC<NoteItemProps> = React.memo(({ note }) => {
-  const {setNotes, basicSearchQuery} = useNotes();
+const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
+  const { basicSearchQuery, setParentNotesFileNames } = useNotes();
 
   const [content, setContent] = useState<string>('');
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editContent, setEditContent] = useState<string>('');
+  const [metadata, setMetadata] = useState<NoteMetadata | null>(null);
 
   useEffect(() => {
     async function getContent() {
       try {
-        const noteContent = await window.electron.ipcRenderer.invoke('get-content', note.fileName);
-        setContent(noteContent);
+        const result = await window.electron.ipcRenderer.invoke('get-all-info', fileName);
+        setContent(result.content);
+        setMetadata(result.metadata);
+        console.log('result:', result);
       } catch (error) {
         console.error('Error fetching note content:', error);
       }
     }
     getContent();
-  }, [note]);
+  }, [fileName]);
 
   const deleteNote = async (fileName: string) => {
     try {
-      await window.electron.ipcRenderer.invoke('delete-note', fileName);
-      setNotes(prevNotes => prevNotes.filter(note => note.fileName !== fileName));
+      if (metadata.isReply) {
+        await window.electron.ipcRenderer.invoke('delete-reply', fileName);
+        setMetadata(prevMetadata => ({ ...prevMetadata, replies: prevMetadata.replies.filter(replyFileName => replyFileName !== fileName) }));
+      } else {
+        await window.electron.ipcRenderer.invoke('delete-note', fileName);
+        setParentNotesFileNames(prevParentNotesFileNames => prevParentNotesFileNames.filter(parentFileName => parentFileName !== fileName));
+      }
     } catch (error) {
       console.error('Failed to delete note:', error);
     }
@@ -44,7 +52,11 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ note }) => {
 
   const saveEdit = async (fileName: string) => {
     try {
-      await window.electron.ipcRenderer.invoke('update-content', fileName, editContent);
+      if (metadata.isReply) {
+        await window.electron.ipcRenderer.invoke('update-reply-content', fileName, editContent);
+      } else {
+        await window.electron.ipcRenderer.invoke('update-note-content', fileName, editContent);
+      }
       setContent(editContent);
       setEditingNote(null);
     } catch (error) {
@@ -115,50 +127,49 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ note }) => {
   }
 
   return (
-    <div className={styles['notes-container']}>
-      <div className={styles['note-legend']}>
-        <div className={styles['note-legend-dot']} />
-      </div>
-      <div className={styles['note-content']}>
-        <div className={styles['note-content-text']}>
-          {editingNote === note.fileName ? (
-            <MarkdownEditor content={editContent} setContent={setEditContent} />
-          ) : (
-            <ReactMarkdown>{content}</ReactMarkdown>
-          )}
+    <>
+      <div className={styles['notes-container']}>
+        <div className={styles['note-legend']}>
+          <div className={styles['note-legend-dot']} />
         </div>
-        {note.attachments && note.attachments.length > 0 && (
-          <div className={styles['note-attachments-container']}>
-            {note.attachments.map((attachment, i) => renderAttachment(attachment, i))}
+        <div className={styles['note-content']}>
+          <div className={styles['note-content-text']}>
+            {editingNote === fileName ? (
+              <MarkdownEditor content={editContent} setContent={setEditContent} />
+            ) : (
+              <ReactMarkdown>{content || ''}</ReactMarkdown>
+            )}
           </div>
-        )}
-        <div className={styles['note-tags-container']}>
-          {note.tags && note.tags.length > 0 && (
-            <div>{note.tags.map((tag: string, i: number) => <span key={i}>{tag}</span>)}</div>
-          )}
-          <div className={styles['note-date']}>{getRelativeTime(note.updatedAt)}</div>
-        </div>
-        <div className={`${styles['note-actions']} ${editingNote === note.fileName ? styles['editing'] : ''}`}>
-          <button onClick={() => deleteNote(note.fileName)}>
-            <Trash2 size={16} /> Delete
-          </button>
-          {editingNote === note.fileName ? (
-            <>
-              <button onClick={() => saveEdit(note.fileName)}>
-                <Save size={16} /> Save
-              </button>
-              <button onClick={() => setEditingNote(null)}>
-                <Cancel size={16} /> Cancel
-              </button>
-            </>
-          ) : (
-            <button onClick={() => startEditing(note.fileName, content)}>
-              <Edit2 size={16} /> Edit
+          {metadata?.attachments?.map((attachment, i) => renderAttachment(attachment, i))}
+          <div className={styles['note-tags-container']}>
+            {metadata?.tags?.map((tag: string, i: number) => <span key={i}>{tag}</span>)}
+            <div className={styles['note-date']}>{getRelativeTime(metadata?.updatedAt)}</div>
+          </div>
+          <div className={`${styles['note-actions']} ${editingNote === fileName ? styles['editing'] : ''}`}>
+            <button onClick={() => deleteNote(fileName)}>
+              <Trash2 size={16} /> Delete
             </button>
-          )}
+            {editingNote === fileName ? (
+              <>
+                <button onClick={() => saveEdit(fileName)}>
+                  <Save size={16} /> Save
+                </button>
+                <button onClick={() => setEditingNote(null)}>
+                  <Cancel size={16} /> Cancel
+                </button>
+              </>
+            ) : (
+              <button onClick={() => startEditing(fileName, content)}>
+                <Edit2 size={16} /> Edit
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+      {metadata?.replies?.map((replyFileName: string) => (
+          <NoteItem key={replyFileName} fileName={replyFileName} />
+        ))}
+    </>
   );
 });
 

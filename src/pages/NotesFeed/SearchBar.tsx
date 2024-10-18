@@ -5,9 +5,9 @@ import { useNotes } from '../../contexts/NotesContext';
 
 const SearchBar: React.FC = () => {
   const {
-    setFilteredNotes,
+    setFilteredParentNotesFileNames,
     setBasicSearchQuery,
-    notes,
+    parentNotesFileNames,
   } = useNotes();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSemanticSearch, setIsSemanticSearch] = useState<boolean>(true);
@@ -23,7 +23,7 @@ const SearchBar: React.FC = () => {
 
   const exitSearch = () => {
     setSearchQuery('');
-    setFilteredNotes(null);
+    setFilteredParentNotesFileNames(null);
   };
 
   return (

@@ -6,36 +6,28 @@ import NoteItem from './NoteItem';
 import { useActionButtons } from '../../contexts/ActionButtons';
 
 const NotesList: React.FC = () => {
-  const { notes, filteredNotes } = useNotes();
+  const { parentNotesFileNames, filteredParentNotesFileNames } = useNotes();
 
-  if (!notes) {
+  if (!parentNotesFileNames) {
     return <div>Loading notes...</div>;
   }
+
+  console.log(parentNotesFileNames);
 
   return (
     <>
       {
-      filteredNotes === null ? 
-      notes.map((note: NoteWithReplies) => ( 
-        <React.Fragment key={note.fileName}>
-          <NoteItem note={note} />
-          {note.replies.map((reply, index) => (
-            <React.Fragment key={index}>
-              <NoteItem note={reply as NoteWithReplies} />
-            </React.Fragment>
-          ))}
+      filteredParentNotesFileNames === null ? 
+      parentNotesFileNames.map((fileName: string) => ( 
+        <React.Fragment key={fileName}>
+          <NoteItem fileName={fileName} />
           {/* <div className={styles['note-divider']}></div> */}
         </React.Fragment>
       ))
       :
-      filteredNotes.map((note: NoteWithReplies) => (
-        <React.Fragment key={note.fileName}>
-          <NoteItem note={note} />
-          {note.replies.map((reply, index) => (
-            <React.Fragment key={index}>
-              <NoteItem note={reply as NoteWithReplies} />
-            </React.Fragment>
-          ))}
+      filteredParentNotesFileNames.map((fileName: string) => (
+        <React.Fragment key={fileName}>
+          <NoteItem fileName={fileName} />
           {/* <div className={styles['note-divider']}></div> */}
         </React.Fragment>
       ))}

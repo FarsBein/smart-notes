@@ -1,42 +1,35 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 
-interface Note {
-    fileName: string;
-    content: string;
-    updatedAt: string;
-    attachments?: string[];
-    tags?: string[];
-}
-
 interface NotesContextType {
-    filteredNotes: NoteWithReplies[];
-    setFilteredNotes: React.Dispatch<React.SetStateAction<NoteWithReplies[] | null>>;
-    notes: NoteWithReplies[];
-    setNotes: React.Dispatch<React.SetStateAction<NoteWithReplies[]>>;
+    filteredParentNotesFileNames: string[];
+    setFilteredParentNotesFileNames: React.Dispatch<React.SetStateAction<string[] | null>>;
     basicSearchQuery: string;
     setBasicSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+    parentNotesFileNames: string[];
+    setParentNotesFileNames: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
 
 export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     
-    const [notes, setNotes] = useState<NoteWithReplies[]>(null);
-    const [filteredNotes, setFilteredNotes] = useState<NoteWithReplies[] | null>(null);
+    const [filteredParentNotesFileNames, setFilteredParentNotesFileNames] = useState<string[] | null>(null);
     const [basicSearchQuery, setBasicSearchQuery] = useState<string>('');
-    
+    const [parentNotesFileNames, setParentNotesFileNames] = useState<string[]>([]);
+
     useEffect(() => {
         const initializeNoteIndex = async () => {
-            const indexes = await window.electron.ipcRenderer.invoke('get-parent-indexes');
-            setNotes(indexes);
+            const parentNotesFileNames = await window.electron.ipcRenderer.invoke('get-parent-notes-file-names');
+            setParentNotesFileNames(parentNotesFileNames);
+            console.log('parentNotesFileNames:', parentNotesFileNames);
         };
 
         initializeNoteIndex();
     }, []);
 
     useEffect(() => {
-        const handleNewNote = async (newNote: NoteWithReplies) => {
-            setNotes(prevNotes => [newNote, ...prevNotes]);
+        const handleNewNote = async (newNoteFileName: string) => {
+            setParentNotesFileNames(prevParentNotesFileNames => [newNoteFileName, ...prevParentNotesFileNames]);
         };
 
         window.electron.ipcRenderer.on('new-note', handleNewNote);
@@ -47,9 +40,9 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, []);
 
     useEffect(() => {
-        const handleSearchResults = (result: { success: boolean, notesData?: NoteWithReplies[], error?: string }) => {
+        const handleSearchResults = (result: { success: boolean, notesData?: NoteMetadata[], error?: string }) => {
             if (result.success) {
-                setFilteredNotes(result.notesData || null);
+                setFilteredParentNotesFileNames(result.notesData?.map(note => note.fileName) || null);
             } else {
                 console.error('Error searching notes:', result.error);
             }
@@ -63,12 +56,12 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, []);
 
     const value = {
-        filteredNotes,
-        setFilteredNotes,
-        notes,
-        setNotes,
+        filteredParentNotesFileNames,
+        setFilteredParentNotesFileNames,
         basicSearchQuery,
         setBasicSearchQuery,
+        parentNotesFileNames,
+        setParentNotesFileNames,
     };
 
     return <NotesContext.Provider value={value}>{children}</NotesContext.Provider>;
