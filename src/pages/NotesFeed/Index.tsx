@@ -11,8 +11,7 @@ const NotesList: React.FC = () => {
   if (!parentNotesFileNames) {
     return <div>Loading notes...</div>;
   }
-
-  console.log(parentNotesFileNames);
+  console.log('parentNotesFileNames:', parentNotesFileNames);
 
   return (
     <>

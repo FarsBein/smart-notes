@@ -24,6 +24,7 @@ const SearchBar: React.FC = () => {
 
   const exitSearch = () => {
     setSearchQuery('');
+    setBasicSearchQuery('');
     setFilteredParentNotesFileNames(null);
   };
 
