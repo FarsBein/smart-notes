@@ -37,8 +37,40 @@ import { cosineSimilarity } from '../utils/embeddings';
         "isAI": false
         }
     },
-    "noteList": ["xxxxxx-xxxxxx"] // has notes filenames (no replies)
+    "noteList": ["xxxxxx-xxxxxx"], // has notes filenames (no replies)
+    "folderStructure": {
+    "id": "root",
+    "name": "Root",
+    "children": [
+        {
+            "id": "projects",
+            "name": "Projects",
+            "children": [
+            {
+                "id": "projects/new app",
+                "name": "New App",
+                "children": []
+            }
+            ]
+        },
+        {
+            "id": "morning",
+            "name": "Morning",
+            "children": []
+        }
+        ]
+    },
+    "folderIndex": {
+        "projects": ["241016-234345"],
+        "projects/new app": ["241016-234345", "241016-234656"],
+        "morning": []
+    },
+    "tagIndex": {
+        "ideas": ["241016-234345"],
+        "screenshots": ["241016-234345"],
+        "feedback": ["241016-234656"]
     }
+}
 */
 interface Index {
     notes: Record<string, NoteMetadata>;

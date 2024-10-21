@@ -30,10 +30,10 @@ body {
     flex-direction: column;
     align-items: left;
 
-    $circle-width: 15px;
+    $circle-width: 18px;
     $line-width: 2px;
     $spacing: 10px;
-    $line-height: calc(100% + 19px);
+    $line-height: calc(100% + 20px);
     background-color: var(--color-background-primary);
 
     .notes-container {

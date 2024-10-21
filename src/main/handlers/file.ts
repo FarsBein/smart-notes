@@ -176,8 +176,6 @@ ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Att
         // update the parent file with the new reply
         const parentMetadata = metadataIndex.getMetadata(parentFileName);
         if (parentMetadata) {
-            parentMetadata.replies.push(fileName);
-            metadataIndex.updateMetadata(parentFileName, parentMetadata);
             const parentFrontmatter = metadataIndex.toFrontmatterString(parentFileName);
             const parentContent = fs.readFileSync(parentMetadata.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim();
             const newParentContent = parentFrontmatter + parentContent;
