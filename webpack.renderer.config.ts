@@ -71,7 +71,7 @@ export const rendererConfig: Configuration = {
   plugins,
   resolve: {
     alias: { '@': resolve(__dirname, 'src') },
-    extensions: ['.js', '.ts', '.jsx', '.tsx', '.css', '.scss'],
+    extensions: ['.js', '.ts', '.jsx', '.tsx', '.css', '.scss', '.json'],
     fallback: {
       "fs": false,
       "path": false,
