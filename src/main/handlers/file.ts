@@ -26,7 +26,7 @@ const timestampFileName = (currentDate: Date): string => {
 }
 
 // Save note to file
-ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachment[], isReply: boolean) => {
+ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachment[], isReply: boolean, tags: string[]) => {
     try {
 
         const currentDate = new Date();
@@ -66,7 +66,7 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
             updatedAt: createdAt,
             highlight: null,
             highlightColor: null,
-            tags: [],
+            tags: tags,
             attachments: processedAttachments,
             replies: [],
             parentFileName: '',

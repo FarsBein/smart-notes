@@ -5,77 +5,81 @@ import { cosineSimilarity } from '../utils/embeddings';
 /*
     the structure of the metadata index is as follows:
     {
-    "notes": {
-        "xxxxxx-xxxxxx": {
-        "id": "xxxxxx-xxxxxx",
-        "filePath": "C:\\Users\\Fars\\Documents\\MyNotes\\xxxxxx-xxxxxx.md",
-        "createdAt": "xxxxxx-xxxxxx",
-        "updatedAt": "xxxxxx-xxxxxx",
-        "highlight": null,
-        "highlightColor": null,
-        "tags": [],
-        "attachments": [],
-        "replies": ["xxxxxx-xxxxxx"],
-        "parentFileName": "",
-        "isReply": false,
-        "isAI": false
-        }
-    },
-    "replies": {
-        "xxxxxx-xxxxxx": {
-        "id": "xxxxxx-xxxxxx",
-        "filePath": "C:\\Users\\Fars\\Documents\\MyNotes\\xxxxxx-xxxxxx.md",
-        "createdAt": "xxxxxx-xxxxxx",
-        "updatedAt": "xxxxxx-xxxxxx",
-        "highlight": null,
-        "highlightColor": null,
-        "tags": [],
-        "attachments": [],
-        "parentFileName": "xxxxxx-xxxxxx",
-        "replies": ["xxxxxx-xxxxxx"],
-        "isReply": true,
-        "isAI": false
-        }
-    },
-    "noteList": ["xxxxxx-xxxxxx"], // has notes filenames (no replies)
-    "folderStructure": {
-    "id": "root",
-    "name": "Root",
-    "children": [
-        {
-            "id": "projects",
-            "name": "Projects",
-            "children": [
-            {
-                "id": "projects/new app",
-                "name": "New App",
-                "children": []
+        "notes": {
+            "xxxxxx-xxxxxx": {
+            "id": "xxxxxx-xxxxxx",
+            "filePath": "C:\\Users\\Fars\\Documents\\MyNotes\\xxxxxx-xxxxxx.md",
+            "createdAt": "xxxxxx-xxxxxx",
+            "updatedAt": "xxxxxx-xxxxxx",
+            "highlight": null,
+            "highlightColor": null,
+            "tags": [],
+            "attachments": [],
+            "replies": ["xxxxxx-xxxxxx"],
+            "parentFileName": "",
+            "isReply": false,
+            "isAI": false
             }
+        },
+        "replies": {
+            "xxxxxx-xxxxxx": {
+            "id": "xxxxxx-xxxxxx",
+            "filePath": "C:\\Users\\Fars\\Documents\\MyNotes\\xxxxxx-xxxxxx.md",
+            "createdAt": "xxxxxx-xxxxxx",
+            "updatedAt": "xxxxxx-xxxxxx",
+            "highlight": null,
+            "highlightColor": null,
+            "tags": [],
+            "attachments": [],
+            "parentFileName": "xxxxxx-xxxxxx",
+            "replies": ["xxxxxx-xxxxxx"],
+            "isReply": true,
+            "isAI": false
+            }
+        },
+        "noteList": ["xxxxxx-xxxxxx"], // has notes filenames (no replies)
+        "folderStructure": {
+            "id": ["root"],
+            "name": "Root",
+            "children": [
+                {
+                    "id": ["root", "projects"],
+                    "name": "Projects",
+                    "children": [
+                        {
+                            "id": ["root", "projects", "new app"],
+                            "name": "New App",
+                            "children": []
+                        }
+                    ]
+                }
             ]
         },
-        {
-            "id": "morning",
-            "name": "Morning",
-            "children": []
+        "folderIndex": {
+            "projects": ["241016-234345"],
+            "projects/new app": ["241016-234345", "241016-234656"],
+            "morning": []
+        },
+        "tagIndex": {
+            "ideas": ["241016-234345"],
+            "screenshots": ["241016-234345"],
+            "feedback": ["241016-234656"]
         }
-        ]
-    },
-    "folderIndex": {
-        "projects": ["241016-234345"],
-        "projects/new app": ["241016-234345", "241016-234656"],
-        "morning": []
-    },
-    "tagIndex": {
-        "ideas": ["241016-234345"],
-        "screenshots": ["241016-234345"],
-        "feedback": ["241016-234656"]
     }
-}
 */
 interface Index {
     notes: Record<string, NoteMetadata>;
     replies: Record<string, NoteMetadata>;
     noteList: string[];
+    folderStructure: FolderStructure;
+    folderIndex: Record<string, string[]>;
+    tagIndex: Record<string, string[]>;
+}
+
+interface FolderStructure {
+    id: string[];
+    name: string;
+    children: FolderStructure[];
 }
 
 class MetadataIndex {
@@ -99,7 +103,7 @@ class MetadataIndex {
             return JSON.parse(data);
         } catch (error) {
             console.error('Error loading index:', error);
-            return { notes: {}, replies: {}, noteList: [] };
+            return { notes: {}, replies: {}, noteList: [], folderStructure: { id: ['root'], name: 'Root', children: [] }, folderIndex: {}, tagIndex: {} };
         }
     }
 
@@ -191,15 +195,18 @@ class MetadataIndex {
                 } catch (error) {
                     console.error('Error deleting reply:', error);
                 }
-                delete this.index.replies[fileName];
-                delete this.embeddings[fileName];
+                delete this.index.replies[reply];
+                delete this.embeddings[reply];
+                this.removeFromTagsAndFolders(reply);
             });
 
             delete this.index.notes[fileName];
             this.index.noteList = this.index.noteList.filter(file => file !== fileName);
-            this.saveIndex();
-
+            
             delete this.embeddings[fileName];
+            this.removeFromTagsAndFolders(fileName);
+
+            this.saveIndex();
             this.saveEmbeddings();
         }
     }
@@ -214,6 +221,7 @@ class MetadataIndex {
             }
             const parentFileName = this.index.replies[fileName].parentFileName;
             this.index.notes[parentFileName].replies = this.index.notes[parentFileName].replies.filter(replyFileName => replyFileName !== fileName);
+            this.removeFromTagsAndFolders(fileName);
             delete this.index.replies[fileName];
             this.saveIndex();
 
@@ -227,9 +235,14 @@ class MetadataIndex {
     public addNote(metadata: NoteMetadata, embedding: number[]): void {
         this.index.notes[metadata.fileName] = metadata;
         this.index.noteList.push(metadata.fileName);
-        this.saveIndex();
+
+        metadata.tags.forEach(tag => {
+            this.addTag(tag, metadata.fileName);
+        });
 
         this.embeddings[metadata.fileName] = embedding;
+
+        this.saveIndex();
         this.saveEmbeddings();
     }
 
@@ -364,6 +377,63 @@ class MetadataIndex {
             console.error('Error reading note content:', error);
             return null;
         }
+    }
+
+
+    public addTag(tag: string, fileName: string): boolean {
+        if (!this.index.tagIndex[tag]) {
+            this.index.tagIndex[tag] = [];
+        }
+        if (!this.index.tagIndex[tag].includes(fileName)) {
+            this.index.tagIndex[tag].push(fileName);
+            
+            // Also update the note's metadata
+            const note = this.getMetadata(fileName);
+            if (note && !note.tags.includes(tag)) {
+                note.tags.push(tag);
+            }
+            
+            this.saveIndex();
+            return true;
+        }
+        return false;
+    }
+
+    public removeTag(tag: string, fileName: string): boolean {
+        if (this.index.tagIndex[tag]) {
+            this.index.tagIndex[tag] = this.index.tagIndex[tag].filter(f => f !== fileName);
+            if (this.index.tagIndex[tag].length === 0) {
+                delete this.index.tagIndex[tag];
+            }
+            
+            // Also update the note's metadata
+            const note = this.getMetadata(fileName);
+            if (note) {
+                note.tags = note.tags.filter(t => t !== tag);
+            }
+            
+            this.saveIndex();
+            return true;
+        }
+        return false;
+    }
+
+    private removeFromTagsAndFolders(fileName: string): void {
+        // Remove from tags
+        Object.keys(this.index.tagIndex).forEach(tag => {
+            this.index.tagIndex[tag] = this.index.tagIndex[tag].filter(file => file !== fileName);
+            if (this.index.tagIndex[tag].length === 0) {
+                delete this.index.tagIndex[tag];
+            }
+        });
+
+        // Remove from folders
+        Object.keys(this.index.folderIndex).forEach(folder => {
+            this.index.folderIndex[folder] = this.index.folderIndex[folder].filter(file => file !== fileName);
+            if (this.index.folderIndex[folder].length === 0) {
+                delete this.index.folderIndex[folder];
+            }
+        });
     }
 }
 
