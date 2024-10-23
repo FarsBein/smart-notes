@@ -32,7 +32,6 @@ const ReplyItem: React.FC<ReplyItemProps> = React.memo(({ fileName, parentFileNa
     const [replyContent, setReplyContent] = useState('');
     const [editTags, setEditTags] = useState<string>('');
 
-    console.log('ReplyItem:', fileName, parentFileName, isLast);
     useEffect(() => {
         async function getContent() {
             try {

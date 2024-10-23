@@ -53,7 +53,6 @@ const createWindow = (): void => {
 
   // Register the global shortcut
   globalShortcut.register('CommandOrControl+Shift+N', () => {
-    console.log('Shortcut triggered');
     createPopup();
   });
 

@@ -27,7 +27,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
         const result = await window.electron.ipcRenderer.invoke('get-all-info', fileName);
         setContent(result.content);
         setMetadata(result.metadata);
-        console.log('result:', result);
+        console.log('getContent get-all-info result:', result);
       } catch (error) {
         console.error('Error fetching note content:', error);
       }
@@ -147,7 +147,6 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
   };
 
   const addReply = async (replyContent: string) => {
-    console.log('Adding reply:', replyContent);
     try {
       const newReplyFileName = await window.electron.ipcRenderer.invoke('save-reply', replyContent, [], fileName, []);
       setMetadata(prevMetadata => ({
