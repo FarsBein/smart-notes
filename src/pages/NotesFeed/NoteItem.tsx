@@ -16,6 +16,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
   const [content, setContent] = useState<string>('');
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editContent, setEditContent] = useState<string>('');
+  const [editTags, setEditTags] = useState<string>('');
   const [metadata, setMetadata] = useState<NoteMetadata | null>(null);
   const [isReplying, setIsReplying] = useState(false);
   const [replyContent, setReplyContent] = useState('');
@@ -51,19 +52,31 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
   const startEditing = (fileName: string, content: string) => {
     setEditingNote(fileName);
     setEditContent(content);
+    setEditTags(metadata?.tags?.join(' ') || '');
   };
 
   const saveEdit = async (fileName: string) => {
     try {
-      if (metadata.isReply) {
-        await window.electron.ipcRenderer.invoke('update-reply-content', fileName, editContent);
-      } else {
-        await window.electron.ipcRenderer.invoke('update-note-content', fileName, editContent);
-      }
+      const newTags = editTags.trim().split(/\s+/).filter(tag => tag.startsWith('#'));
+      await window.electron.ipcRenderer.invoke('update-note', fileName, editContent, newTags);
       setContent(editContent);
+      setMetadata(prevMetadata => ({ ...prevMetadata, tags: newTags }));
       setEditingNote(null);
     } catch (error) {
-      console.error('Failed to update note content:', error);
+      console.error('Failed to update note:', error);
+    }
+  };
+
+  const handleTagInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.endsWith(' ')) {
+      const words = value.trim().split(/\s+/);
+      words[words.length - 1] = words[words.length - 1].startsWith('#')
+        ? words[words.length - 1]
+        : '#' + words[words.length - 1];
+      setEditTags(words.join(' ') + ' ');
+    } else {
+      setEditTags(value);
     }
   };
 
@@ -136,7 +149,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
   const addReply = async (replyContent: string) => {
     console.log('Adding reply:', replyContent);
     try {
-      const newReplyFileName = await window.electron.ipcRenderer.invoke('save-reply', replyContent, [], fileName);
+      const newReplyFileName = await window.electron.ipcRenderer.invoke('save-reply', replyContent, [], fileName, []);
       setMetadata(prevMetadata => ({
         ...prevMetadata,
         replies: [...(prevMetadata?.replies || []), newReplyFileName]
@@ -160,16 +173,27 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
         <div className={styles['note-content']}>
           <div className={styles['note-content-text']}>
             {editingNote === fileName ? (
-              <MarkdownEditor content={editContent} setContent={setEditContent} />
+              <>
+                <MarkdownEditor content={editContent} setContent={setEditContent} />
+                <input
+                  type="text"
+                  value={editTags}
+                  onChange={handleTagInputChange}
+                  placeholder="Enter tags..."
+                  className={styles['tag-input']}
+                />
+              </>
             ) : (
-              <ReactMarkdown>{content || ''}</ReactMarkdown>
+              <>
+                <ReactMarkdown>{content || ''}</ReactMarkdown>
+                <div className={styles['note-tags-container']}>
+                  {metadata?.tags?.map((tag: string, i: number) => <span key={i}>{tag}</span>)}
+          <div className={styles['note-date']}>{getRelativeTime(metadata?.updatedAt)}</div>
+                </div>
+              </>
             )}
           </div>
           {metadata?.attachments?.map((attachment, i) => renderAttachment(attachment, i))}
-          <div className={styles['note-tags-container']}>
-            {metadata?.tags?.map((tag: string, i: number) => <span key={i}>{tag}</span>)}
-            <div className={styles['note-date']}>{getRelativeTime(metadata?.updatedAt)}</div>
-          </div>
           <div className={`${styles['note-actions']} ${editingNote === fileName ? styles['editing'] : ''}`}>
             <button onClick={() => deleteNote(fileName, metadata?.isReply)}>
               <Trash2 size={16} /> Delete

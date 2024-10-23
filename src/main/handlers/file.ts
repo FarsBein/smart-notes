@@ -5,13 +5,15 @@ import crypto from 'crypto';
 import MetadataIndex from '../utils/metaDataIndex';
 import { mainWindow } from '../main';
 import { generateEmbedding } from '../utils/embeddings';
+import MarkdownFileHandler from '../utils/markdownFileHandler';
 
 const notesPath = path.join(app.getPath('documents'), 'MyNotes');
 const attachmentsDir = path.join(notesPath, 'attachments');
 
 const indexPath = path.join(notesPath, 'metadata_index.json');
 const embeddingsPath = path.join(notesPath, 'embeddings.json');
-const metadataIndex = new MetadataIndex(indexPath, embeddingsPath);
+const metadataIndex = new MetadataIndex(indexPath, embeddingsPath, notesPath);
+const markdownHandler = new MarkdownFileHandler(notesPath);
 
 const timestampFileName = (currentDate: Date): string => {
     const year = String(currentDate.getFullYear()).slice(-2);
@@ -81,16 +83,16 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
             `updatedAt: '${metadata.updatedAt}'\n` +
             `highlight: ${metadata.highlight}\n` +
             `highlightColor: ${metadata.highlightColor}\n` +
-            `tags: [${metadata.tags.join(', ')}]\n` +
+            `tags: ${JSON.stringify(metadata.tags)}\n` +
             `attachments: [${metadata.attachments.join(', ')}]\n` +
-            `parentFileName: ${metadata.parentFileName}\n` +
+            `parentFileName: '${metadata.parentFileName}'\n` +
             `replies: [${metadata.replies.join(', ')}]\n` +
             `isReply: ${metadata.isReply}\n` +
             `isAI: ${metadata.isAI}\n` +
             `---\n`;
 
         const fullNoteContent = frontmatter + noteContent;
-        fs.writeFileSync(metadata.filePath, fullNoteContent);
+        markdownHandler.writeFile(fileName, fullNoteContent);
 
         const embedding = await generateEmbedding(noteContent);
 
@@ -105,7 +107,7 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
     }
 });
 
-ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Attachment[], parentFileName: string) => {
+ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Attachment[], parentFileName: string, tags: string[]) => {
     try {
         const currentDate = new Date();
         const createdAt = currentDate.toISOString();
@@ -144,7 +146,7 @@ ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Att
             updatedAt: createdAt,
             highlight: null,
             highlightColor: null,
-            tags: [],
+            tags: tags,
             attachments: processedAttachments,
             replies: [],
             parentFileName: parentFileName,
@@ -159,16 +161,17 @@ ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Att
             `updatedAt: '${metadata.updatedAt}'\n` +
             `highlight: ${metadata.highlight}\n` +
             `highlightColor: ${metadata.highlightColor}\n` +
-            `tags: [${metadata.tags.join(', ')}]\n` +
+            `tags: ${JSON.stringify(metadata.tags)}\n` +
             `attachments: [${metadata.attachments.join(', ')}]\n` +
-            `parentFileName: ${metadata.parentFileName}\n` +
+            `parentFileName: '${metadata.parentFileName}'\n` +
             `replies: [${metadata.replies.join(', ')}]\n` +
             `isReply: ${metadata.isReply}\n` +
             `isAI: ${metadata.isAI}\n` +
             `---\n`;
 
+        // write the reply to the file
         const fullNoteContent = frontmatter + noteContent;
-        fs.writeFileSync(metadata.filePath, fullNoteContent);
+        markdownHandler.writeFile(fileName, fullNoteContent);
 
         const embedding = await generateEmbedding(noteContent);
         metadataIndex.addReply(metadata, embedding);
@@ -176,10 +179,7 @@ ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Att
         // update the parent file with the new reply
         const parentMetadata = metadataIndex.getMetadata(parentFileName);
         if (parentMetadata) {
-            const parentFrontmatter = metadataIndex.toFrontmatterString(parentFileName);
-            const parentContent = fs.readFileSync(parentMetadata.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim();
-            const newParentContent = parentFrontmatter + parentContent;
-            fs.writeFileSync(parentMetadata.filePath, newParentContent);
+            markdownHandler.updateReplies(parentFileName, [...parentMetadata.replies, fileName]);
         } else {
             console.error('Parent note not found:', parentFileName);
         }
@@ -205,16 +205,6 @@ ipcMain.handle('get-parent-notes-file-names', async (event) => {
     return metadataIndex.getParentNotesFileNames();
 });
 
-ipcMain.handle('update-reply-content', async (event, fileName: string, newContent: string) => {
-    const result = metadataIndex.updateReplyContent(fileName, newContent);
-    return result;
-});
-
-ipcMain.handle('update-note-content', async (event, fileName: string, newContent: string) => {
-    const result = metadataIndex.updateNoteContent(fileName, newContent);
-    return result;
-});
-
 ipcMain.handle('delete-note', async (event, fileName: string) => {
     metadataIndex.deleteNote(fileName);
 });
@@ -232,4 +222,13 @@ ipcMain.handle('semantic-search', async (event, searchQuery: string) => {
         console.error('Failed to semantic search:', err);
         return null;
     }
+});
+
+ipcMain.handle('update-note', async (event, fileName: string, newContent: string, newTags: string[]) => {
+    // update the metadata
+    metadataIndex.updateTags(fileName, newTags);
+
+    // update the note content and tags in the markdown file
+    markdownHandler.updateContent(fileName, newContent);
+    markdownHandler.updateTags(fileName, newTags);
 });

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { cosineSimilarity } from '../utils/embeddings';
+import MarkdownFileHandler from './markdownFileHandler';
 
 // multi line comment
 /*
@@ -85,16 +86,16 @@ interface FolderStructure {
 class MetadataIndex {
     private indexPath: string;
     private embeddingsPath: string;
-    // create a type for the index base on the json structure
-
     private index: Index;
     private embeddings: Record<string, number[]>;
+    private markdownHandler: MarkdownFileHandler;
 
-    constructor(indexPath: string, embeddingsPath: string) {
+    constructor(indexPath: string, embeddingsPath: string, notesPath: string) {
         this.indexPath = indexPath;
         this.embeddingsPath = embeddingsPath;
         this.index = this.loadIndex();
         this.embeddings = this.loadEmbeddings();
+        this.markdownHandler = new MarkdownFileHandler(notesPath);
     }
 
     private loadIndex(): Index {
@@ -137,61 +138,30 @@ class MetadataIndex {
         return this.index.noteList;
     }
 
-    public updateReplyContent(fileName: string, newContent: string): string | null {
-        if (this.index.replies[fileName]) {
-            this.updateContent(fileName, newContent);
-            this.saveIndex();
+    public updateTags(fileName: string, updatedTags: string[]): string | null {
+        const metadata = this.index.notes[fileName] || this.index.replies[fileName];
+        if (metadata) {
+            const oldTags = metadata.tags;
+            const tagsToAdd = updatedTags.filter(tag => !oldTags.includes(tag));
+            const tagsToRemove = oldTags.filter(tag => !updatedTags.includes(tag));
+            tagsToAdd.forEach(tag => this.addTag(tag, fileName));
+            tagsToRemove.forEach(tag => this.removeTag(tag, fileName));
+            if (tagsToAdd.length > 0 || tagsToRemove.length > 0) {
+                this.saveIndex();
+            }
             return fileName;
-        }
-        console.error('Reply not found:', fileName);
+        } 
+        console.error('Note/Reply not found:', fileName);
         return null;
-    }
-
-    public updateNoteContent(fileName: string, newContent: string): string | null {
-        if (this.index.notes[fileName]) {
-            this.updateContent(fileName, newContent);
-            this.saveIndex();
-            return fileName;
-        }
-        console.error('Note not found:', fileName);
-        return null;
-    }
-
-    public updateContent(fileName: string, newContent: string): string | null {
-        // TODO: switch to just concatenating new content to existing frontmatter
-        try {
-            const note = this.getMetadata(fileName);
-            if (!note) throw new Error('Note not found');
-            let fullNoteContent = fs.readFileSync(note.filePath, 'utf-8');
-            const oldContent = fullNoteContent.replace(/^---[\s\S]*?---/, '').trim()
-
-            // Update the note content
-            const updatedAt = new Date().toISOString();
-            fullNoteContent = fullNoteContent.replace(oldContent, newContent);
-            fs.writeFileSync(note.filePath, fullNoteContent);
-
-            // Update metadata
-            this.updateNoteMetadata(fileName, { updatedAt });
-
-            return fileName;
-        } catch (error) {
-            console.error('Failed to update note:', error);
-            return null;
-        }
     }
 
     public deleteNote(fileName: string): void {
         if (this.index.notes[fileName]) {
-            try {
-                fs.unlinkSync(this.index.notes[fileName].filePath);
-            } catch (error) {
-                console.error('Error deleting note:', error);
-                return;
-            }
+            this.markdownHandler.deleteFile(fileName);
             // delete all replies to this note
             this.index.notes[fileName].replies.forEach(reply => {
                 try {
-                    fs.unlinkSync(this.index.replies[reply].filePath);
+                    this.markdownHandler.deleteFile(reply);
                 } catch (error) {
                     console.error('Error deleting reply:', error);
                 }
@@ -213,12 +183,7 @@ class MetadataIndex {
 
     public deleteReply(fileName: string): void {
         if (this.index.replies[fileName]) {
-            try {
-                fs.unlinkSync(this.index.replies[fileName].filePath);
-            } catch (error) {
-                console.error('Error deleting reply:', error);
-                return;
-            }
+            this.markdownHandler.deleteFile(fileName);
             const parentFileName = this.index.replies[fileName].parentFileName;
             this.index.notes[parentFileName].replies = this.index.notes[parentFileName].replies.filter(replyFileName => replyFileName !== fileName);
             this.removeFromTagsAndFolders(fileName);
@@ -247,8 +212,14 @@ class MetadataIndex {
     }
 
     public addReply(metadata: NoteMetadata, embedding: number[]): void {
+        // add the reply to the index
         this.index.replies[metadata.fileName] = metadata;
+        // add the reply to the parent note
         this.index.notes[metadata.parentFileName].replies.push(metadata.fileName);
+        // add the tags to the index
+        metadata.tags.forEach(tag => {
+            this.addTag(tag, metadata.fileName);
+        });
         this.saveIndex();
 
         this.embeddings[metadata.fileName] = embedding;
@@ -317,7 +288,63 @@ class MetadataIndex {
             `---\n`;
     }
 
-    // unused ---------------------------------------------------------------
+    private removeFromTagsAndFolders(fileName: string): void {
+        // Remove from tags
+        Object.keys(this.index.tagIndex).forEach(tag => {
+            this.index.tagIndex[tag] = this.index.tagIndex[tag].filter(file => file !== fileName);
+            if (this.index.tagIndex[tag].length === 0) {
+                delete this.index.tagIndex[tag];
+            }
+        });
+
+        // Remove from folders
+        Object.keys(this.index.folderIndex).forEach(folder => {
+            this.index.folderIndex[folder] = this.index.folderIndex[folder].filter(file => file !== fileName);
+            if (this.index.folderIndex[folder].length === 0) {
+                delete this.index.folderIndex[folder];
+            }
+        });
+    }
+
+    public addTag(tag: string, fileName: string): boolean {
+        if (!this.index.tagIndex[tag]) {
+            this.index.tagIndex[tag] = [];
+        }
+        if (!this.index.tagIndex[tag].includes(fileName)) {
+            this.index.tagIndex[tag].push(fileName);
+            
+            // Also update the note's metadata
+            const note = this.getMetadata(fileName);
+            if (note && !note.tags.includes(tag)) {
+                note.tags.push(tag);
+            }
+            
+            this.saveIndex();
+            return true;
+        }
+        return false;
+    }
+
+    public removeTag(tag: string, fileName: string): boolean {
+        if (this.index.tagIndex[tag]) {
+            this.index.tagIndex[tag] = this.index.tagIndex[tag].filter(f => f !== fileName);
+            if (this.index.tagIndex[tag].length === 0) {
+                delete this.index.tagIndex[tag];
+            }
+            
+            // Also update the note's metadata
+            const note = this.getMetadata(fileName);
+            if (note) {
+                note.tags = note.tags.filter(t => t !== tag);
+            }
+            
+            this.saveIndex();
+            return true;
+        }
+        return false;
+    }
+
+    // Not used yet ---------------------------------------------------------------
     public getNoteContent(fileName: string): string | null {
         const note = this.getMetadata(fileName);
         if (!note) return null;
@@ -378,62 +405,83 @@ class MetadataIndex {
             return null;
         }
     }
+    
+    public addFolder(parentFolderId: string[], newFolderName: string): string[] | null {
+        const newFolderId = [...parentFolderId, newFolderName];
+        const newFolder: FolderStructure = {
+            id: newFolderId,
+            name: newFolderName,
+            children: []
+        };
 
-
-    public addTag(tag: string, fileName: string): boolean {
-        if (!this.index.tagIndex[tag]) {
-            this.index.tagIndex[tag] = [];
-        }
-        if (!this.index.tagIndex[tag].includes(fileName)) {
-            this.index.tagIndex[tag].push(fileName);
-            
-            // Also update the note's metadata
-            const note = this.getMetadata(fileName);
-            if (note && !note.tags.includes(tag)) {
-                note.tags.push(tag);
+        const addFolderRecursive = (folder: FolderStructure): boolean => {
+            if (JSON.stringify(folder.id) === JSON.stringify(parentFolderId)) {
+                folder.children.push(newFolder);
+                return true;
             }
-            
+            for (const child of folder.children) {
+                if (addFolderRecursive(child)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        if (addFolderRecursive(this.index.folderStructure)) {
+            const folderPath = newFolderId.join('/');
+            this.index.folderIndex[folderPath] = [];
+            this.saveIndex();
+            return newFolderId;
+        }
+        return null;
+    }
+
+    public removeFolder(folderId: string[]): boolean {
+        const removeFolderRecursive = (folder: FolderStructure, parentFolder: FolderStructure | null): boolean => {
+            if (JSON.stringify(folder.id) === JSON.stringify(folderId)) {
+                if (parentFolder) {
+                    parentFolder.children = parentFolder.children.filter(child => JSON.stringify(child.id) !== JSON.stringify(folderId));
+                } else {
+                    // Trying to remove root folder, which is not allowed
+                    return false;
+                }
+                const folderPath = folderId.join('/');
+                delete this.index.folderIndex[folderPath];
+                return true;
+            }
+            for (const child of folder.children) {
+                if (removeFolderRecursive(child, folder)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        if (removeFolderRecursive(this.index.folderStructure, null)) {
             this.saveIndex();
             return true;
         }
         return false;
     }
 
-    public removeTag(tag: string, fileName: string): boolean {
-        if (this.index.tagIndex[tag]) {
-            this.index.tagIndex[tag] = this.index.tagIndex[tag].filter(f => f !== fileName);
-            if (this.index.tagIndex[tag].length === 0) {
-                delete this.index.tagIndex[tag];
+    public addNoteToFolder(fileName: string, folderId: string): boolean {
+        if (this.index.folderIndex[folderId]) {
+            if (!this.index.folderIndex[folderId].includes(fileName)) {
+                this.index.folderIndex[folderId].push(fileName);
+                this.saveIndex();
+                return true;
             }
-            
-            // Also update the note's metadata
-            const note = this.getMetadata(fileName);
-            if (note) {
-                note.tags = note.tags.filter(t => t !== tag);
-            }
-            
-            this.saveIndex();
-            return true;
         }
         return false;
     }
 
-    private removeFromTagsAndFolders(fileName: string): void {
-        // Remove from tags
-        Object.keys(this.index.tagIndex).forEach(tag => {
-            this.index.tagIndex[tag] = this.index.tagIndex[tag].filter(file => file !== fileName);
-            if (this.index.tagIndex[tag].length === 0) {
-                delete this.index.tagIndex[tag];
-            }
-        });
-
-        // Remove from folders
-        Object.keys(this.index.folderIndex).forEach(folder => {
-            this.index.folderIndex[folder] = this.index.folderIndex[folder].filter(file => file !== fileName);
-            if (this.index.folderIndex[folder].length === 0) {
-                delete this.index.folderIndex[folder];
-            }
-        });
+    public removeNoteFromFolder(fileName: string, folderId: string): boolean {
+        if (this.index.folderIndex[folderId]) {
+            this.index.folderIndex[folderId] = this.index.folderIndex[folderId].filter(f => f !== fileName);
+            this.saveIndex();
+            return true;
+        }
+        return false;
     }
 }
 
