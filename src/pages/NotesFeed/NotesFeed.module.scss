@@ -30,10 +30,10 @@ body {
     flex-direction: column;
     align-items: left;
 
-    $circle-width: 18px;
+    $circle-width: 20px;
     $line-width: 2px;
     $spacing: 10px;
-    $line-height: calc(100% + 20px);
+    $line-height: calc(100% + 18px);
     background-color: var(--color-background-primary);
 
     .notes-container {
@@ -45,7 +45,9 @@ body {
 
         .note-legend {
             margin-top: 6px;
-            margin-right: 2px;
+            margin-left: 15px;
+            margin-right: 5px;
+            
             display: flex;
             flex-direction: column;
             align-items: center;
