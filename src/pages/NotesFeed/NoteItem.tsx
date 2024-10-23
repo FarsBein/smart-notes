@@ -146,9 +146,9 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
     setReplyContent('');
   };
 
-  const addReply = async (replyContent: string) => {
+  const addReply = async (replyContent: string, tags: string[]) => {
     try {
-      const newReplyFileName = await window.electron.ipcRenderer.invoke('save-reply', replyContent, [], fileName, []);
+      const newReplyFileName = await window.electron.ipcRenderer.invoke('save-reply', replyContent, [], fileName, tags);
       setMetadata(prevMetadata => ({
         ...prevMetadata,
         replies: [...(prevMetadata?.replies || []), newReplyFileName]
@@ -186,8 +186,10 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
               <>
                 <ReactMarkdown>{content || ''}</ReactMarkdown>
                 <div className={styles['note-tags-container']}>
-                  {metadata?.tags?.map((tag: string, i: number) => <span key={i}>{tag}</span>)}
-          <div className={styles['note-date']}>{getRelativeTime(metadata?.updatedAt)}</div>
+                  <div className={styles['note-tags']}>
+                    {metadata?.tags.length > 0 ? metadata?.tags?.map((tag: string, i: number) => <span key={i}>{tag}</span>) : <span></span>}
+                  </div>
+                  <div className={styles['note-date']}>{getRelativeTime(metadata?.updatedAt)}</div>
                 </div>
               </>
             )}
@@ -220,8 +222,15 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
           {isReplying && (
             <div className={styles['reply-container']}>
               <MarkdownEditor content={replyContent} setContent={setReplyContent} />
+              <input
+                  type="text"
+                  value={editTags}
+                  onChange={handleTagInputChange}
+                  placeholder="Enter tags..."
+                  className={styles['tag-input']}
+                />
               <div className={styles['reply-actions']}>
-                <button onClick={() => { addReply(replyContent); setIsReplying(false); setReplyContent(''); }}>
+                <button onClick={() => { addReply(replyContent, editTags.trim().split(/\s+/).filter(tag => tag.startsWith('#'))); setIsReplying(false); setReplyContent(''); setEditTags(''); }}>
                   <Save size={16} /> Submit Reply
                 </button>
                 <button onClick={cancelReply}>

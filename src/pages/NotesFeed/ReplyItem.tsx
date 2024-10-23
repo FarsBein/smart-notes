@@ -9,7 +9,7 @@ interface ReplyItemProps {
     fileName: string;
     parentFileName: string;
     isLast: boolean;
-    addReply: (replyContent: string) => Promise<void>;
+    addReply: (replyContent: string, tags: string[]) => Promise<void>;
     deleteNote: (fileName: string, isReply: boolean) => Promise<void>;
 }
 
@@ -143,9 +143,10 @@ const ReplyItem: React.FC<ReplyItemProps> = React.memo(({ fileName, parentFileNa
     };
 
     const submitReply = async () => {
-        await addReply(replyContent);
+        await addReply(replyContent, editTags.trim().split(/\s+/).filter(tag => tag.startsWith('#')));
         setIsReplying(false);
         setReplyContent('');
+        setEditTags('');
     };
 
     return (
@@ -171,7 +172,9 @@ const ReplyItem: React.FC<ReplyItemProps> = React.memo(({ fileName, parentFileNa
                         <>
                             <ReactMarkdown>{content || ''}</ReactMarkdown>
                             <div className={styles['note-tags-container']}>
-                                {metadata?.tags?.map((tag: string, i: number) => <span key={i}>{tag}</span>)}
+                                <div className={styles['note-tags']}>
+                                    {metadata?.tags.length > 0 ? metadata?.tags?.map((tag: string, i: number) => <span key={i}>{tag}</span>) : <span></span>}
+                                </div>
                                 <div className={styles['note-date']}>{getRelativeTime(metadata?.updatedAt)}</div>
                             </div>
                         </>
@@ -205,6 +208,13 @@ const ReplyItem: React.FC<ReplyItemProps> = React.memo(({ fileName, parentFileNa
                 {isReplying && (
                     <div className={styles['reply-container']}>
                         <MarkdownEditor content={replyContent} setContent={setReplyContent} />
+                        <input
+                            type="text"
+                            value={editTags}
+                            onChange={handleTagInputChange}
+                            placeholder="Enter tags..."
+                            className={styles['tag-input']}
+                        />
                         <div className={styles['reply-actions']}>
                             <button onClick={submitReply}>
                                 <Save size={16} /> Submit Reply
