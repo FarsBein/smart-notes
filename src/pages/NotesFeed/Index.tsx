@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './NotesFeed.module.scss';
 import { NotesProvider, useNotes } from '../../contexts/NotesContext';
 import SearchBar from './SearchBar';
@@ -6,19 +6,28 @@ import NoteItem from './NoteItem';
 import { useActionButtons } from '../../contexts/ActionButtons';
 
 const NotesList: React.FC = () => {
-  const { filteredNotes } = useNotes();
+  const { parentNotesFileNames, filteredParentNotesFileNames } = useNotes();
+
+  if (!parentNotesFileNames) {
+    return <div>Loading notes...</div>;
+  }
+  console.log('parentNotesFileNames:', parentNotesFileNames);
 
   return (
     <>
-      {filteredNotes.map((note: Note) => (
-        <React.Fragment key={note.fileName}>
-          <NoteItem note={note} />
-          {note.replies.map((reply: Note) => (
-            <React.Fragment key={reply.fileName}>
-              <NoteItem note={reply} />
-            </React.Fragment>
-          ))}
-          {/* <div className={styles['note-divider']}></div> */}
+      {
+      filteredParentNotesFileNames === null ? 
+      parentNotesFileNames.map((fileName: string) => ( 
+        <React.Fragment key={fileName}>
+          <NoteItem fileName={fileName} />
+          <div className={styles['note-divider']}></div>
+        </React.Fragment>
+      ))
+      :
+      filteredParentNotesFileNames.map((fileName: string) => (
+        <React.Fragment key={fileName}>
+          <NoteItem fileName={fileName} />
+          <div className={styles['note-divider']}></div>
         </React.Fragment>
       ))}
     </>

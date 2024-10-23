@@ -9,7 +9,7 @@ interface PopupContextType {
   setSaveStatus: (status: string) => void;
   selectedHighlight: { name: string; color: string };
   setSelectedHighlight: (highlight: { name: string; color: string }) => void;
-  handleSave: () => void;
+  handleSave: (tagInput?: string) => void;
   handleCancel: () => void;
   isSaving: boolean;
   isValidUrl: (string: string) => boolean;
@@ -94,9 +94,11 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setAttachments([...attachments, newAttachment]);
   };
 
-  const handleSave = () => {
+  
+  const handleSave = (tagInput?: string) => {
+    const convertTagInputIntoArray = tagInput ? tagInput.split(' ') : [];
     const isReply = false;
-    window.electron.ipcRenderer.send('save-note', note, attachments, isReply);
+    window.electron.ipcRenderer.send('save-note', note, attachments, isReply, convertTagInputIntoArray);
     setIsSaving(true);
     setNote('');
     setAttachments([]);

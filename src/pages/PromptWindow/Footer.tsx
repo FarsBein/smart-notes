@@ -6,9 +6,8 @@ import styles from './PromptWindow.module.scss';
 
 const Footer: React.FC = () => {
   const { handleSave, handleCancel, setAttachments, attachments, saveStatus } = usePopupContext();
-  const [tagInput, setTagInput] = useState('');
+  const [tagInput, setTagInput] = useState<string | undefined>(undefined);
  
-
   const handleTagInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value.endsWith(' ')) {
@@ -28,7 +27,7 @@ const Footer: React.FC = () => {
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSave();
+      handleSave(tagInput?.trim());
     } else if (e.key === 'Backspace' && e.shiftKey) {
       e.preventDefault();
       setAttachments([]);
@@ -110,7 +109,7 @@ const Footer: React.FC = () => {
           </button> */}
         </div>
         <button className={styles['popup__post-btn']} onClick={handleCancel}>Cancel</button>
-        <button className={styles['popup__post-btn']} onClick={handleSave} disabled={!!saveStatus}>{saveStatus || 'Save'}</button>
+        <button className={styles['popup__post-btn']} onClick={() => handleSave(tagInput?.trim())} disabled={!!saveStatus}>{saveStatus || 'Save'}</button>
       </div>
     </div>
   );

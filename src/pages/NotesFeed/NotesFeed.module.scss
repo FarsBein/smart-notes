@@ -30,10 +30,10 @@ body {
     flex-direction: column;
     align-items: left;
 
-    $circle-width: 15px;
+    $circle-width: 20px;
     $line-width: 2px;
     $spacing: 10px;
-    $line-height: calc(100% + 19px);
+    $line-height: calc(100% + 2px);
     background-color: var(--color-background-primary);
 
     .notes-container {
@@ -41,11 +41,13 @@ body {
         font-size: 17px;
         margin: 25px 0;
         margin-bottom: 30px;
-        margin: var(--spacing-4) var(--spacing-4) var(--spacing-6);
+        margin: var(--spacing-4) var(--spacing-4) var(--spacing-2);
 
         .note-legend {
             margin-top: 6px;
-            margin-right: 2px;
+            margin-left: 5px;
+            margin-right: 5px;
+            
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -74,7 +76,7 @@ body {
             font-size: 18px;
             flex-grow: 1;
             width: 100%;
-            padding: 0 $spacing $spacing $spacing;
+            padding: 0 $spacing 0 $spacing;
             gap: $spacing;
 
 
@@ -102,22 +104,25 @@ body {
             }
 
             .note-tags-container {
-                font-size: var(--font-size-sm);
                 display: flex;
                 justify-content: space-between;
-                flex-wrap: wrap;
                 color: var(--color-text-secondary);
+                font-size: var(--font-size-sm);
 
-                span {
-                    margin-right: $spacing;
-                    cursor: pointer;
+                .note-tags {
+                    display: flex;
+                    flex-wrap: wrap;
+                    span {
+                        margin-right: $spacing;
+                        cursor: pointer;
 
-                    &:hover {
-                        color: var(--color-text-primary);
-                    }
+                        &:hover {
+                            color: var(--color-text-primary);
+                        }
 
-                    &:last-child {
-                        margin-right: 0;
+                        &:last-child {
+                            margin-right: 0;
+                        }
                     }
                 }
 
