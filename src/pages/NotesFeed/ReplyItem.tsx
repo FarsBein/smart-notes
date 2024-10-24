@@ -108,11 +108,11 @@ const ReplyItem: React.FC<ReplyItemProps> = React.memo(({ fileName, parentFileNa
 
         let interval = Math.floor(seconds / 31536000);
         if (interval >= 1) {
-            return `${interval} year${interval !== 1 ? 's' : ''} ago`;
+            return `${interval} yr${interval !== 1 ? 's' : ''} ago`;
         }
         interval = Math.floor(seconds / 2592000);
         if (interval >= 1) {
-            return `${interval} month${interval !== 1 ? 's' : ''} ago`;
+            return `${interval} mo${interval !== 1 ? 's' : ''} ago`;
         }
         interval = Math.floor(seconds / 86400);
         if (interval >= 1) {
@@ -120,13 +120,13 @@ const ReplyItem: React.FC<ReplyItemProps> = React.memo(({ fileName, parentFileNa
         }
         interval = Math.floor(seconds / 3600);
         if (interval >= 1) {
-            return `${interval} hour${interval !== 1 ? 's' : ''} ago`;
+            return `${interval} hr${interval !== 1 ? 's' : ''} ago`;
         }
         interval = Math.floor(seconds / 60);
         if (interval >= 1) {
-            return `${interval} minute${interval !== 1 ? 's' : ''} ago`;
+            return `${interval} min${interval !== 1 ? 's' : ''} ago`;
         }
-        return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+        return `${seconds} sec${seconds !== 1 ? 's' : ''} ago`;
     };
 
     if (basicSearchQuery && content && !content.toLowerCase().includes(basicSearchQuery.toLowerCase())) {
@@ -171,13 +171,14 @@ const ReplyItem: React.FC<ReplyItemProps> = React.memo(({ fileName, parentFileNa
                     ) : (
                         <>
                             <div className={styles['note-tags-container']}>
-                                <div className={styles['note-date']}>{getRelativeTime(metadata?.updatedAt)}</div>
-                                <div style={{ margin: '0 var(--spacing-1)' }}></div>
                                 <div className={styles['note-tags']}>
-                                    {metadata?.tags.length > 0 ? metadata?.tags?.map((tag: string, i: number) => <span key={i}>{tag}</span>) : <span></span>}
+                                    {metadata?.tags.length > 0 ? metadata?.tags?.map((tag: string, i: number) => <span key={i}>{tag}</span>) :  <span style={{ height: 'var(--spacing-5)' }}></span>}
                                 </div>
                             </div>
-                            <ReactMarkdown>{content || ''}</ReactMarkdown>
+                            <div style={{ display: 'flex', gap: 'var(--spacing-3)', justifyContent: 'space-between'}}>
+                                <ReactMarkdown>{content || ''}</ReactMarkdown>
+                                <div className={styles['note-date']}>{getRelativeTime(metadata?.updatedAt)}</div>
+                            </div>
                         </>
                     )}
                 </div>

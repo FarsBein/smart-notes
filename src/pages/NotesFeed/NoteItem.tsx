@@ -92,6 +92,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
             e.currentTarget.style.display = 'none';
             console.error('Failed to load image:', parsedAttachment);
           }}
+          className={styles['note-attachment-image']}
         />
       );
     } else {
@@ -106,17 +107,17 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
 
     let interval = Math.floor(seconds / 31536000); // years
     if (interval >= 1) {
-      return `${interval} year${interval !== 1 ? 's' : ''} ago`;
+      return `${interval} yr${interval !== 1 ? 's' : ''} ago`;
     }
 
     interval = Math.floor(seconds / 2592000); // months
     if (interval >= 1) {
-      return `${interval} month${interval !== 1 ? 's' : ''} ago`;
+      return `${interval} mo${interval !== 1 ? 's' : ''} ago`;
     }
 
     interval = Math.floor(seconds / 604800); // weeks
     if (interval >= 1) {
-      return `${interval} week${interval !== 1 ? 's' : ''} ago`;
+      return `${interval} wk${interval !== 1 ? 's' : ''} ago`;
     }
 
     interval = Math.floor(seconds / 86400); // days
@@ -126,15 +127,15 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
 
     interval = Math.floor(seconds / 3600); // hours
     if (interval >= 1) {
-      return `${interval} hour${interval !== 1 ? 's' : ''} ago`;
+      return `${interval} hr${interval !== 1 ? 's' : ''} ago`;
     }
 
     interval = Math.floor(seconds / 60); // minutes
     if (interval >= 1) {
-      return `${interval} minute${interval !== 1 ? 's' : ''} ago`;
+      return `${interval} min${interval !== 1 ? 's' : ''} ago`;
     }
 
-    return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+    return `${seconds} sec${seconds !== 1 ? 's' : ''} ago`;
   };
 
   const startReplying = () => {
@@ -185,17 +186,20 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
             ) : (
               <>
                 <div className={styles['note-tags-container']}>
-                  <div className={styles['note-date']}>{getRelativeTime(metadata?.updatedAt)}</div>
-                  <div style={{ margin: '0 var(--spacing-1)' }}></div>
                   <div className={styles['note-tags']}>
-                    {metadata?.tags.length > 0 ? metadata?.tags?.map((tag: string, i: number) => <span key={i}>{tag}</span>) : <span></span>}
+                    {metadata?.tags.length > 0 ? metadata?.tags?.map((tag: string, i: number) => <span key={i}>{tag}</span>) : <span style={{ height: 'var(--spacing-5)' }}></span>}
                   </div>
                 </div>
-                <ReactMarkdown>{content || ''}</ReactMarkdown>
+                <div style={{ display: 'flex', gap: 'var(--spacing-1)', justifyContent: 'space-between' }}>
+                  <ReactMarkdown>{content || ''}</ReactMarkdown>
+                  <div className={styles['note-date']}>{getRelativeTime(metadata?.updatedAt)}</div>
+                </div>
               </>
             )}
           </div>
-          {metadata?.attachments?.map((attachment, i) => renderAttachment(attachment, i))}
+          <div className={styles['note-attachments']}>
+            {metadata?.attachments?.map((attachment, i) => renderAttachment(attachment, i))}
+          </div>
           <div className={`${styles['note-actions']} ${editingNote === fileName ? styles['editing'] : ''}`}>
             <button onClick={() => deleteNote(fileName, metadata?.isReply)}>
               <Trash2 size={16} /> Delete
@@ -224,12 +228,12 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
             <div className={styles['reply-container']}>
               <MarkdownEditor content={replyContent} setContent={setReplyContent} />
               <input
-                  type="text"
-                  value={editTags}
-                  onChange={handleTagInputChange}
-                  placeholder="Enter tags..."
-                  className={styles['tag-input']}
-                />
+                type="text"
+                value={editTags}
+                onChange={handleTagInputChange}
+                placeholder="Enter tags..."
+                className={styles['tag-input']}
+              />
               <div className={styles['reply-actions']}>
                 <button onClick={() => { addReply(replyContent, editTags.trim().split(/\s+/).filter(tag => tag.startsWith('#'))); setIsReplying(false); setReplyContent(''); setEditTags(''); }}>
                   <Save size={16} /> Submit Reply
@@ -243,9 +247,9 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
         </div>
       </div>
       {metadata?.replies?.map((replyFileName: string, index: number) => (
-        <ReplyItem 
-          key={replyFileName} 
-          fileName={replyFileName} 
+        <ReplyItem
+          key={replyFileName}
+          fileName={replyFileName}
           parentFileName={fileName}
           deleteNote={deleteNote}
           isLast={index === metadata.replies.length - 1}

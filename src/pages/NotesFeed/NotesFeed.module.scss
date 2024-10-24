@@ -24,6 +24,12 @@ body {
 }
 
 
+.note-attachment-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius-lg);
+}
+
 
 .notes-container-wrapper {
     display: flex;
@@ -103,23 +109,28 @@ body {
                     }
                 }
             }
-
+            .note-date {
+                color: var(--color-text-tertiary);
+                font-size: var(--font-size-sm);
+                flex-shrink: 0;
+                font-weight: var(--font-weight-medium);
+                margin-top: 0.18rem; // minor adjustment to align with content
+            }
             .note-tags-container {
                 display: flex;
                 justify-content: space-between;
                 font-size: var(--font-size-sm);
                 color: var(--color-text-tertiary);
-                font-weight: 500;
+                font-weight: var(--font-weight-medium);
                 .note-tags {
                     display: flex;
                     flex-wrap: wrap;
-
                     span {
                         margin-right: $spacing;
                         cursor: pointer;
 
                         &:hover {
-                            color: var(--color-text-primary);
+                            color: var(--color-accent);
                         }
 
                         &:last-child {
@@ -128,8 +139,7 @@ body {
                     }
                 }
 
-                .note-date {
-                }
+                
             }
 
             .note-actions {

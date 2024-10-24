@@ -30,11 +30,12 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   useEffect(() => {
     const ipc = window.electron.ipcRenderer;
 
-    ipc.send('get-recent-clipboard');
-
-    const handleRecentClipboardContent = (recentItems: Attachment[]) => {
-      setAttachments(recentItems);
-    };
+    // for now we are not going to auto-populate the clipboard
+    // ipc.send('get-recent-clipboard');
+    // const handleRecentClipboardContent = (recentItems: Attachment[]) => {
+    //   setAttachments(recentItems);
+    // };
+    // ipc.on('recent-clipboard-content', handleRecentClipboardContent);
 
     const handleSaveResult = (result: { success: boolean; error?: string }) => {
       if (result.success) {
@@ -47,11 +48,11 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
     };
 
-    ipc.on('recent-clipboard-content', handleRecentClipboardContent);
+    
     ipc.on('save-note-result', handleSaveResult);
 
     return () => {
-      ipc.removeListener('recent-clipboard-content', handleRecentClipboardContent);
+      // ipc.removeListener('recent-clipboard-content', handleRecentClipboardContent);
       ipc.removeListener('save-note-result', handleSaveResult);
     };
   }, [setAttachments, setSaveStatus]);

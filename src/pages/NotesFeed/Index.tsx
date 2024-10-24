@@ -20,14 +20,14 @@ const NotesList: React.FC = () => {
       parentNotesFileNames.map((fileName: string) => ( 
         <React.Fragment key={fileName}>
           <NoteItem fileName={fileName} />
-          <div className={styles['note-divider']}></div>
+          {/* <div className={styles['note-divider']}></div> */}
         </React.Fragment>
       ))
       :
       filteredParentNotesFileNames.map((fileName: string) => (
         <React.Fragment key={fileName}>
           <NoteItem fileName={fileName} />
-          <div className={styles['note-divider']}></div>
+          {/* <div className={styles['note-divider']}></div> */}
         </React.Fragment>
       ))}
     </>

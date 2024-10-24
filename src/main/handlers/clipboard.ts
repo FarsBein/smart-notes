@@ -45,7 +45,7 @@ function checkClipboard() {
 }
 
 // Check clipboard every second
-setInterval(checkClipboard, 1000);
+// setInterval(checkClipboard, 1000);
 
 ipcMain.on('get-recent-clipboard', (event) => {
     const recentItems = clipboardHistory.filter(item => Date.now() - item.timestamp <= CLIPBOARD_TIMEOUT);
