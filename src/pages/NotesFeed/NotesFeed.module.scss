@@ -44,7 +44,7 @@ body {
         margin: var(--spacing-4) var(--spacing-4) var(--spacing-2);
 
         .note-legend {
-            margin-top: 26px;
+            margin-top: 25px;
             margin-left: 5px;
             margin-right: 5px;
             
@@ -67,6 +67,7 @@ body {
                 top: calc(#{$circle-width} + 4px);
                 height: $line-height;
                 background-color: var(--color-text-tertiary);
+                border-radius: 10px;
             }
         }
 
