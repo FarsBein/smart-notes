@@ -33,7 +33,7 @@ body {
     $circle-width: 20px;
     $line-width: 2px;
     $spacing: 10px;
-    $line-height: calc(100% + 2px);
+    $line-height: calc(100% + 22px);
     background-color: var(--color-background-primary);
 
     .notes-container {
@@ -44,7 +44,7 @@ body {
         margin: var(--spacing-4) var(--spacing-4) var(--spacing-2);
 
         .note-legend {
-            margin-top: 6px;
+            margin-top: 26px;
             margin-left: 5px;
             margin-right: 5px;
             
@@ -106,12 +106,13 @@ body {
             .note-tags-container {
                 display: flex;
                 justify-content: space-between;
-                color: var(--color-text-secondary);
                 font-size: var(--font-size-sm);
-
+                color: var(--color-text-tertiary);
+                font-weight: 500;
                 .note-tags {
                     display: flex;
                     flex-wrap: wrap;
+
                     span {
                         margin-right: $spacing;
                         cursor: pointer;
@@ -127,7 +128,6 @@ body {
                 }
 
                 .note-date {
-                    color: var(--color-text-secondary);
                 }
             }
 

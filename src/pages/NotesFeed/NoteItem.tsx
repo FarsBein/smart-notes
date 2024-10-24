@@ -184,13 +184,14 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
               </>
             ) : (
               <>
-                <ReactMarkdown>{content || ''}</ReactMarkdown>
                 <div className={styles['note-tags-container']}>
+                  <div className={styles['note-date']}>{getRelativeTime(metadata?.updatedAt)}</div>
+                  <div style={{ margin: '0 var(--spacing-1)' }}></div>
                   <div className={styles['note-tags']}>
                     {metadata?.tags.length > 0 ? metadata?.tags?.map((tag: string, i: number) => <span key={i}>{tag}</span>) : <span></span>}
                   </div>
-                  <div className={styles['note-date']}>{getRelativeTime(metadata?.updatedAt)}</div>
                 </div>
+                <ReactMarkdown>{content || ''}</ReactMarkdown>
               </>
             )}
           </div>
