@@ -199,7 +199,7 @@ class MetadataIndex {
 
     public addNote(metadata: NoteMetadata, embedding: number[]): void {
         this.index.notes[metadata.fileName] = metadata;
-        this.index.noteList.push(metadata.fileName);
+        this.index.noteList = [metadata.fileName, ...this.index.noteList];
 
         metadata.tags.forEach(tag => {
             this.addTag(tag, metadata.fileName);

@@ -29,7 +29,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     useEffect(() => {
         const handleNewNote = async (newNoteFileName: string) => {
-            setParentNotesFileNames(prevParentNotesFileNames => [...prevParentNotesFileNames, newNoteFileName]);
+            setParentNotesFileNames(prevParentNotesFileNames => [newNoteFileName, ...prevParentNotesFileNames]);
         };
 
         window.electron.ipcRenderer.on('new-note', handleNewNote);
