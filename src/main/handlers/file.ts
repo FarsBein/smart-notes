@@ -1,5 +1,5 @@
 import { ipcMain, app } from 'electron';
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import MetadataIndex from '../utils/metaDataIndex';
@@ -30,18 +30,17 @@ const timestampFileName = (currentDate: Date): string => {
 // Save note to file
 ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachment[], isReply: boolean, tags: string[]) => {
     try {
-
         const currentDate = new Date();
         const createdAt = currentDate.toISOString();
         const fileName = timestampFileName(currentDate);
         const filePath = path.join(notesPath, fileName);
 
         // Ensure directories exist
-        fs.mkdirSync(notesPath, { recursive: true });
-        fs.mkdirSync(attachmentsDir, { recursive: true });
+        await fs.mkdir(notesPath, { recursive: true });
+        await fs.mkdir(attachmentsDir, { recursive: true });
 
         // Process attachments
-        const processedAttachments = attachments.map((attachment: Attachment) => {
+        const processedAttachments = await Promise.all(attachments.map(async (attachment: Attachment) => {
             switch (attachment.type) {
                 case 'url':
                     return JSON.stringify(attachment.content);
@@ -53,13 +52,14 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
                     const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
                     const imgFilePath = path.join('attachments', imgFileName);
                     const normalizedImgPath = path.normalize(imgFilePath); // Normalize the path to remove any potential double slashes
-                    fs.writeFileSync(path.join(attachmentsDir, imgFileName), Buffer.from(imgContentBase64Data, 'base64'));
+                    await fs.mkdir(attachmentsDir, { recursive: true });
+                    await fs.writeFile(path.join(attachmentsDir, imgFileName), Buffer.from(imgContentBase64Data, 'base64'));
                     const markdownImgPath = normalizedImgPath.split(path.sep).join('/'); // Ensure the path uses forward slashes for Markdown compatibility
                     return JSON.stringify(markdownImgPath);
                 default:
                     return '';
             }
-        }).filter(Boolean); // Removes empty strings
+        })).then(results => results.filter(Boolean)); // Removes empty strings
 
         const metadata: NoteMetadata = {
             fileName,
@@ -92,11 +92,11 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
             `---\n`;
 
         const fullNoteContent = frontmatter + noteContent;
-        markdownHandler.writeFile(fileName, fullNoteContent);
+        await markdownHandler.writeFile(fileName, fullNoteContent);
 
         const embedding = await generateEmbedding(noteContent);
 
-        metadataIndex.addNote(metadata, embedding);
+        await metadataIndex.addNote(metadata, embedding);
 
         event.reply('save-note-result', { success: true, filePath });
 
@@ -115,11 +115,11 @@ ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Att
         const filePath = path.join(notesPath, fileName);
 
         // Ensure directories exist
-        fs.mkdirSync(notesPath, { recursive: true });
-        fs.mkdirSync(attachmentsDir, { recursive: true });
+        await fs.mkdir(notesPath, { recursive: true });
+        await fs.mkdir(attachmentsDir, { recursive: true });
 
         // Process attachments
-        const processedAttachments = attachments.map((attachment: Attachment) => {
+        const processedAttachments = await Promise.all(attachments.map(async (attachment: Attachment) => {
             switch (attachment.type) {
                 case 'url':
                     return JSON.stringify(attachment.content);
@@ -131,13 +131,14 @@ ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Att
                     const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
                     const imgFilePath = path.join('attachments', imgFileName);
                     const normalizedImgPath = path.normalize(imgFilePath); // Normalize the path to remove any potential double slashes
-                    fs.writeFileSync(path.join(attachmentsDir, imgFileName), Buffer.from(imgContentBase64Data, 'base64'));
+                    await fs.mkdir(attachmentsDir, { recursive: true });
+                    await fs.writeFile(path.join(attachmentsDir, imgFileName), Buffer.from(imgContentBase64Data, 'base64'));
                     const markdownImgPath = normalizedImgPath.split(path.sep).join('/'); // Ensure the path uses forward slashes for Markdown compatibility
                     return JSON.stringify(markdownImgPath);
                 default:
                     return '';
             }
-        }).filter(Boolean); // Removes empty strings
+        })).then(results => results.filter(Boolean)); // Removes empty strings
 
         const metadata: NoteMetadata = {
             fileName,
@@ -171,15 +172,15 @@ ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Att
 
         // write the reply to the file
         const fullNoteContent = frontmatter + noteContent;
-        markdownHandler.writeFile(fileName, fullNoteContent);
+        await markdownHandler.writeFile(fileName, fullNoteContent);
 
         const embedding = await generateEmbedding(noteContent);
-        metadataIndex.addReply(metadata, embedding);
+        await metadataIndex.addReply(metadata, embedding);
 
         // update the parent file with the new reply
-        const parentMetadata = metadataIndex.getMetadata(parentFileName);
+        const parentMetadata = await metadataIndex.getMetadata(parentFileName);
         if (parentMetadata) {
-            markdownHandler.updateReplies(parentFileName, [...parentMetadata.replies, fileName]);
+            await markdownHandler.updateReplies(parentFileName, [...parentMetadata.replies, fileName]);
         } else {
             console.error('Parent note not found:', parentFileName);
         }
@@ -192,12 +193,12 @@ ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Att
 });
 
 ipcMain.handle('get-all-info', async (event, fileName: string) => {
-    const metadata = metadataIndex.getMetadata(fileName);
+    const metadata = await metadataIndex.getMetadata(fileName);
     if (!metadata) {
         console.error('Note not found:', fileName);
         return null;
     }
-    const content = metadataIndex.getContent(fileName);
+    const content = await metadataIndex.getContent(fileName);
     return { metadata, content };
 });
 
@@ -206,11 +207,11 @@ ipcMain.handle('get-parent-notes-file-names', async (event) => {
 });
 
 ipcMain.handle('delete-note', async (event, fileName: string) => {
-    metadataIndex.deleteNote(fileName);
+    await metadataIndex.deleteNote(fileName);
 });
 
 ipcMain.handle('delete-reply', async (event, fileName: string) => {
-    metadataIndex.deleteReply(fileName);
+    await metadataIndex.deleteReply(fileName);
 });
 
 ipcMain.handle('semantic-search', async (event, searchQuery: string) => {
@@ -226,11 +227,11 @@ ipcMain.handle('semantic-search', async (event, searchQuery: string) => {
 
 ipcMain.handle('update-note', async (event, fileName: string, newContent: string, newTags: string[]) => {
     // update the metadata
-    metadataIndex.updateTags(fileName, newTags);
+    await metadataIndex.updateTags(fileName, newTags);
 
     // update the note content and tags in the markdown file
-    markdownHandler.updateContent(fileName, newContent);
-    markdownHandler.updateTags(fileName, newTags);
+    await markdownHandler.updateContent(fileName, newContent);
+    await markdownHandler.updateTags(fileName, newTags);
 });
 
 ipcMain.handle('get-indexed-tags', async (event) => {
@@ -240,4 +241,3 @@ ipcMain.handle('get-indexed-tags', async (event) => {
 ipcMain.handle('get-filenames-that-contains-tags', async (event, tags: string[]) => {
     return metadataIndex.getFilenamesThatContainsTags(tags);
 });
-

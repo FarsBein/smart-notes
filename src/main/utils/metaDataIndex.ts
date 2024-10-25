@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import { cosineSimilarity } from '../utils/embeddings';
 import MarkdownFileHandler from './markdownFileHandler';
 
@@ -93,14 +93,17 @@ class MetadataIndex {
     constructor(indexPath: string, embeddingsPath: string, notesPath: string) {
         this.indexPath = indexPath;
         this.embeddingsPath = embeddingsPath;
-        this.index = this.loadIndex();
-        this.embeddings = this.loadEmbeddings();
-        this.markdownHandler = new MarkdownFileHandler(notesPath);
-    }
+        this.index = {} as Index; 
+        this.embeddings = {} as Record<string, number[]>;
 
-    private loadIndex(): Index {
+        this.loadIndex().then(index => this.index = index);
+        this.loadEmbeddings().then(embeddings => this.embeddings = embeddings);
+
+        this.markdownHandler = new MarkdownFileHandler(notesPath);
+    }    
+    private async loadIndex(): Promise<Index> {
         try {
-            const data = fs.readFileSync(this.indexPath, 'utf-8');
+            const data = await fs.readFile(this.indexPath, 'utf-8');
             return JSON.parse(data);
         } catch (error) {
             console.error('Error loading index:', error);
@@ -108,9 +111,9 @@ class MetadataIndex {
         }
     }
 
-    private loadEmbeddings(): Record<string, number[]> {
+    private async loadEmbeddings(): Promise<Record<string, number[]>> {
         try {
-            const data = fs.readFileSync(this.embeddingsPath, 'utf-8');
+            const data = await fs.readFile(this.embeddingsPath, 'utf-8');
             return JSON.parse(data);
         } catch (error) {
             console.error('Error loading embeddings:', error);
@@ -118,17 +121,17 @@ class MetadataIndex {
         }
     }
 
-    private saveIndex(): void {
+    private async saveIndex(): Promise<void> {
         try {
-            fs.writeFileSync(this.indexPath, JSON.stringify(this.index, null, 2));
+            await fs.writeFile(this.indexPath, JSON.stringify(this.index, null, 2));
         } catch (error) {
             console.error('Error saving index:', error);
         }
     }
 
-    private saveEmbeddings(): void {
+    private async saveEmbeddings(): Promise<void> {
         try {
-            fs.writeFileSync(this.embeddingsPath, JSON.stringify(this.embeddings, null, 2));
+            await fs.writeFile(this.embeddingsPath, JSON.stringify(this.embeddings, null, 2));
         } catch (error) {
             console.error('Error saving embeddings:', error);
         }
@@ -197,20 +200,20 @@ class MetadataIndex {
         return [...new Set(filenames)];
     }
 
-    public deleteNote(fileName: string): void {
+    public async deleteNote(fileName: string): Promise<void> {
         if (this.index.notes[fileName]) {
-            this.markdownHandler.deleteFile(fileName);
+            await this.markdownHandler.deleteFile(fileName);
             // delete all replies to this note
-            this.index.notes[fileName].replies.forEach(reply => {
+            for (const reply of this.index.notes[fileName].replies) {
                 try {
-                    this.markdownHandler.deleteFile(reply);
+                    await this.markdownHandler.deleteFile(reply);
+                    delete this.index.replies[reply];
+                    delete this.embeddings[reply];
+                    this.removeFromTagsAndFolders(reply);
                 } catch (error) {
                     console.error('Error deleting reply:', error);
                 }
-                delete this.index.replies[reply];
-                delete this.embeddings[reply];
-                this.removeFromTagsAndFolders(reply);
-            });
+            }
 
             delete this.index.notes[fileName];
             this.index.noteList = this.index.noteList.filter(file => file !== fileName);
@@ -218,8 +221,8 @@ class MetadataIndex {
             delete this.embeddings[fileName];
             this.removeFromTagsAndFolders(fileName);
 
-            this.saveIndex();
-            this.saveEmbeddings();
+            await this.saveIndex();
+            await this.saveEmbeddings();
         }
     }
 
@@ -386,11 +389,11 @@ class MetadataIndex {
         return false;
     }
 
-    // Not used yet ---------------------------------------------------------------
-    public getNoteContent(fileName: string): string | null {
+        // Not used yet ---------------------------------------------------------------
+        public getNoteContent(fileName: string): Promise<string | null> {
         const note = this.getMetadata(fileName);
-        if (!note) return null;
-        return fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim();
+        if (!note) return Promise.resolve(null);
+        return fs.readFile(note.filePath, 'utf-8').then(content => content.replace(/^---[\s\S]*?---/, '').trim());
     }
 
     public static fromFrontmatterString(fileName: string, frontmatter: string, filePath: string): NoteMetadata {
@@ -437,14 +440,14 @@ class MetadataIndex {
         );
     }
 
-    public getContent(fileName: string): string | null {
+    public getContent(fileName: string): Promise<string | null> {
         const note = this.getMetadata(fileName);
-        if (!note) return null;
+        if (!note) return Promise.resolve(null);
         try {
-            return fs.readFileSync(note.filePath, 'utf-8').replace(/^---[\s\S]*?---/, '').trim();
+            return fs.readFile(note.filePath, 'utf-8').then(content => content.replace(/^---[\s\S]*?---/, '').trim());
         } catch (error) {
             console.error('Error reading note content:', error);
-            return null;
+            return Promise.resolve(null);
         }
     }
     
