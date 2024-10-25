@@ -15,12 +15,9 @@ interface NoteItemProps {
 const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
   const { basicSearchQuery, setParentNotesFileNames } = useNotes();
   const { attachmentsComponent } = useAttachment();
-  const { getRelativeTime, handleTagClick, isVisible } = useNotesHelper();
+  const { getRelativeTime, handleTagClick, isVisible, startEditing, saveEdit, editingNote, setEditingNote, editContent, setEditContent, editTags, setEditTags, handleTagInputChange } = useNotesHelper();
 
   const [content, setContent] = useState<string>('');
-  const [editingNote, setEditingNote] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState<string>('');
-  const [editTags, setEditTags] = useState<string>('');
   const [metadata, setMetadata] = useState<NoteMetadata | null>(null);
   const [isReplying, setIsReplying] = useState(false);
   const [replyContent, setReplyContent] = useState('');
@@ -53,34 +50,15 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
     }
   };
 
-  const startEditing = (fileName: string, content: string) => {
-    setEditingNote(fileName);
-    setEditContent(content);
-    setEditTags(metadata?.tags?.join(' ') || '');
+  const handleStartEditing = () => {
+    startEditing(fileName, content, metadata?.tags || []);
   };
 
-  const saveEdit = async (fileName: string) => {
-    try {
-      const newTags = editTags.trim().split(/\s+/).filter(tag => tag.startsWith('#'));
-      await window.electron.ipcRenderer.invoke('update-note', fileName, editContent, newTags);
-      setContent(editContent);
-      setMetadata(prevMetadata => ({ ...prevMetadata, tags: newTags }));
-      setEditingNote(null);
-    } catch (error) {
-      console.error('Failed to update note:', error);
-    }
-  };
-
-  const handleTagInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value.endsWith(' ')) {
-      const words = value.trim().split(/\s+/);
-      words[words.length - 1] = words[words.length - 1].startsWith('#')
-        ? words[words.length - 1]
-        : '#' + words[words.length - 1];
-      setEditTags(words.join(' ') + ' ');
-    } else {
-      setEditTags(value);
+  const handleSaveEdit = async () => {
+    const result = await saveEdit(fileName);
+    if (result) {
+      setContent(result.content);
+      setMetadata(prevMetadata => ({ ...prevMetadata, tags: result.tags }));
     }
   };
 
@@ -150,7 +128,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
             </button>
             {editingNote === fileName ? (
               <>
-                <button onClick={() => saveEdit(fileName)}>
+                <button onClick={handleSaveEdit}>
                   <Save size={16} /> Save
                 </button>
                 <button onClick={() => setEditingNote(null)}>
@@ -158,7 +136,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
                 </button>
               </>
             ) : (
-              <button onClick={() => startEditing(fileName, content)}>
+              <button onClick={handleStartEditing}>
                 <Edit2 size={16} /> Edit
               </button>
             )}

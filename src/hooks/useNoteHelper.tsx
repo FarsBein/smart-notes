@@ -59,6 +59,24 @@ export const useNotesHelper = () => {
 
     const isVisible = (basicSearchQuery: string, content: string) => !basicSearchQuery || (content && content.toLowerCase().includes(basicSearchQuery.toLowerCase()));
 
+    const startEditing = (fileName: string, content: string, tags: string[]) => {
+        setEditingNote(fileName);
+        setEditContent(content);
+        setEditTags(tags.join(' ') || '');
+    };
+
+    const saveEdit = async (fileName: string) => {
+        try {
+            const newTags = editTags.trim().split(/\s+/).filter(tag => tag.startsWith('#'));
+            await window.electron.ipcRenderer.invoke('update-note', fileName, editContent, newTags);
+            setEditingNote(null);
+            return { content: editContent, tags: newTags };
+        } catch (error) {
+            console.error('Failed to update note:', error);
+            return null;
+        }
+    };
+
     return {
         editContent,
         setEditContent,
@@ -70,5 +88,7 @@ export const useNotesHelper = () => {
         getRelativeTime,
         handleTagClick,
         isVisible,
+        startEditing,
+        saveEdit,
     };
 };
