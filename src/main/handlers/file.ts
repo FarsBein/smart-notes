@@ -2,18 +2,19 @@ import { ipcMain, app } from 'electron';
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
-import MetadataIndex from '../utils/metaDataIndex';
+import IndexFileHandler from '../utils/indexFileHandler';
 import { mainWindow } from '../main';
 import { generateEmbedding } from '../utils/embeddings';
 import MarkdownFileHandler from '../utils/markdownFileHandler';
+import { NotesError } from '../utils/errors';
 
 const notesPath = path.join(app.getPath('documents'), 'MyNotes');
 const attachmentsDir = path.join(notesPath, 'attachments');
 
 const indexPath = path.join(notesPath, 'metadata_index.json');
 const embeddingsPath = path.join(notesPath, 'embeddings.json');
-const metadataIndex = new MetadataIndex(indexPath, embeddingsPath, notesPath);
-const markdownHandler = new MarkdownFileHandler(notesPath);
+const indexFileHandler = new IndexFileHandler(indexPath, embeddingsPath, notesPath);
+const markdownFileHandler = new MarkdownFileHandler(notesPath);
 
 const timestampFileName = (currentDate: Date): string => {
     const year = String(currentDate.getFullYear()).slice(-2);
@@ -92,11 +93,11 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
             `---\n`;
 
         const fullNoteContent = frontmatter + noteContent;
-        await markdownHandler.writeFile(fileName, fullNoteContent);
+        await markdownFileHandler.writeFile(fileName, fullNoteContent);
 
         const embedding = await generateEmbedding(noteContent);
 
-        await metadataIndex.addNote(metadata, embedding);
+        await indexFileHandler.addNote(metadata, embedding);
 
         event.reply('save-note-result', { success: true, filePath });
 
@@ -172,15 +173,15 @@ ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Att
 
         // write the reply to the file
         const fullNoteContent = frontmatter + noteContent;
-        await markdownHandler.writeFile(fileName, fullNoteContent);
+        await markdownFileHandler.writeFile(fileName, fullNoteContent);
 
         const embedding = await generateEmbedding(noteContent);
-        await metadataIndex.addReply(metadata, embedding);
+        await indexFileHandler.addReply(metadata, embedding);
 
         // update the parent file with the new reply
-        const parentMetadata = await metadataIndex.getMetadata(parentFileName);
+        const parentMetadata = await indexFileHandler.getMetadata(parentFileName);
         if (parentMetadata) {
-            await markdownHandler.updateReplies(parentFileName, [...parentMetadata.replies, fileName]);
+            await markdownFileHandler.updateReplies(parentFileName, [...parentMetadata.replies, fileName]);
         } else {
             console.error('Parent note not found:', parentFileName);
         }
@@ -193,31 +194,58 @@ ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Att
 });
 
 ipcMain.handle('get-all-info', async (event, fileName: string) => {
-    const metadata = await metadataIndex.getMetadata(fileName);
-    if (!metadata) {
-        console.error('Note not found:', fileName);
-        return null;
+    try {
+        const metadata = await indexFileHandler.getMetadata(fileName);
+        const content = await markdownFileHandler.getContent(fileName);
+        return { metadata, content };
+    } catch (error) {
+        console.error('Failed to get note info:', error);
+        return {
+            error: error instanceof NotesError 
+                ? { code: error.code, message: error.message }
+                : { code: 'UNKNOWN_ERROR', message: 'An unexpected error occurred' }
+        };
     }
-    const content = await metadataIndex.getContent(fileName);
-    return { metadata, content };
 });
 
 ipcMain.handle('get-parent-notes-file-names', async (event) => {
-    return metadataIndex.getParentNotesFileNames();
+    return indexFileHandler.getParentNotesFileNames();
 });
 
 ipcMain.handle('delete-note', async (event, fileName: string) => {
-    await metadataIndex.deleteNote(fileName);
+    try {
+        await indexFileHandler.deleteNote(fileName);
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to delete note:', error);
+        return {
+            success: false,
+            error: error instanceof NotesError 
+                ? { code: error.code, message: error.message }
+                : { code: 'UNKNOWN_ERROR', message: 'An unexpected error occurred' }
+        };
+    }
 });
 
 ipcMain.handle('delete-reply', async (event, fileName: string) => {
-    await metadataIndex.deleteReply(fileName);
+    try {
+        await indexFileHandler.deleteReply(fileName);
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to delete note:', error);
+        return {
+            success: false,
+            error: error instanceof NotesError 
+                ? { code: error.code, message: error.message }
+                : { code: 'UNKNOWN_ERROR', message: 'An unexpected error occurred' }
+        };
+    }
 });
 
 ipcMain.handle('semantic-search', async (event, searchQuery: string) => {
     try {
         const queryEmbedding = await generateEmbedding(searchQuery);
-        const similarNotes = metadataIndex.searchSimilarNotes(queryEmbedding);
+        const similarNotes = indexFileHandler.searchSimilarNotes(queryEmbedding);
         return similarNotes;
     } catch (err) {
         console.error('Failed to semantic search:', err);
@@ -227,17 +255,17 @@ ipcMain.handle('semantic-search', async (event, searchQuery: string) => {
 
 ipcMain.handle('update-note', async (event, fileName: string, newContent: string, newTags: string[]) => {
     // update the metadata
-    await metadataIndex.updateTags(fileName, newTags);
+    await indexFileHandler.updateTags(fileName, newTags);
 
     // update the note content and tags in the markdown file
-    await markdownHandler.updateContent(fileName, newContent);
-    await markdownHandler.updateTags(fileName, newTags);
+    await markdownFileHandler.updateContent(fileName, newContent);
+    await markdownFileHandler.updateTags(fileName, newTags);
 });
 
 ipcMain.handle('get-indexed-tags', async (event) => {
-    return metadataIndex.getIndexedTags();
+    return indexFileHandler.getIndexedTags();
 });
 
 ipcMain.handle('get-filenames-that-contains-tags', async (event, tags: string[]) => {
-    return metadataIndex.getFilenamesThatContainsTags(tags);
+    return indexFileHandler.getFilenamesThatContainsTags(tags);
 });

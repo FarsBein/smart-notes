@@ -21,8 +21,8 @@ export async function generateEmbedding(noteContent: string): Promise<number[]> 
     }
   } catch (error) {
     console.error('Error generating embedding:', error);
-    throw error;
-  }
+        throw error;
+    }
 }
 
 // returns a value between -1 and 1

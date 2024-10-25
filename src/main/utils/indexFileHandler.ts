@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
-import { cosineSimilarity } from '../utils/embeddings';
+import { cosineSimilarity } from './embeddings';
 import MarkdownFileHandler from './markdownFileHandler';
+import { NotesError, ErrorCodes } from './errors';
 
 // multi line comment
 /*
@@ -68,7 +69,7 @@ import MarkdownFileHandler from './markdownFileHandler';
         }
     }
 */
-interface Index {
+interface IndexFileHandler {
     notes: Record<string, NoteMetadata>;
     replies: Record<string, NoteMetadata>;
     noteList: string[];
@@ -83,31 +84,43 @@ interface FolderStructure {
     children: FolderStructure[];
 }
 
-class MetadataIndex {
+class IndexFileHandler {
     private indexPath: string;
     private embeddingsPath: string;
-    private index: Index;
+    private index: IndexFileHandler;
     private embeddings: Record<string, number[]>;
     private markdownHandler: MarkdownFileHandler;
 
     constructor(indexPath: string, embeddingsPath: string, notesPath: string) {
         this.indexPath = indexPath;
         this.embeddingsPath = embeddingsPath;
-        this.index = {} as Index; 
+        this.index = {} as IndexFileHandler;
         this.embeddings = {} as Record<string, number[]>;
 
         this.loadIndex().then(index => this.index = index);
         this.loadEmbeddings().then(embeddings => this.embeddings = embeddings);
 
         this.markdownHandler = new MarkdownFileHandler(notesPath);
-    }    
-    private async loadIndex(): Promise<Index> {
+    }
+
+    private async loadIndex(): Promise<IndexFileHandler> {
         try {
             const data = await fs.readFile(this.indexPath, 'utf-8');
             return JSON.parse(data);
         } catch (error) {
             console.error('Error loading index:', error);
-            return { notes: {}, replies: {}, noteList: [], folderStructure: { id: ['root'], name: 'Root', children: [] }, folderIndex: {}, tagIndex: {} };
+            return {
+                notes: {},
+                replies: {},
+                noteList: [],
+                folderStructure: {
+                    id: ['root'],
+                    name: 'Root',
+                    children: []
+                },
+                folderIndex: {},
+                tagIndex: {}
+            } as IndexFileHandler;
         }
     }
 
@@ -141,7 +154,7 @@ class MetadataIndex {
         return this.index.noteList;
     }
 
-    public updateTags(fileName: string, updatedTags: string[]): string | null {
+    public async updateTags(fileName: string, updatedTags: string[]): Promise<string | null> {
         const metadata = this.index.notes[fileName] || this.index.replies[fileName];
         if (metadata) {
             const oldTags = metadata.tags;
@@ -150,10 +163,10 @@ class MetadataIndex {
             tagsToAdd.forEach(tag => this.addTag(tag, fileName));
             tagsToRemove.forEach(tag => this.removeTag(tag, fileName));
             if (tagsToAdd.length > 0 || tagsToRemove.length > 0) {
-                this.saveIndex();
+                await this.saveIndex();
             }
             return fileName;
-        } 
+        }
         console.error('Note/Reply not found:', fileName);
         return null;
     }
@@ -168,10 +181,10 @@ class MetadataIndex {
             .map(tag => tagIndex[tag])
             .filter(Boolean)
             .sort((a, b) => a.length - b.length);
-    
+
         // Early exit if there are no valid tags or an empty list
         if (listsOfFiles.length === 0 || listsOfFiles[0].length === 0) return [];
-    
+
         // Use a set for the smallest list and perform intersection with other lists
         const initialSet = new Set(listsOfFiles[0]);
         return listsOfFiles.slice(1).reduce((acc, currList) => {
@@ -184,7 +197,7 @@ class MetadataIndex {
         // get all the parent file names that contain the tags
         // this means if a reply has the tag, it will get the parent note and all its replies
         // if inclusive is true, do or operation where it gets all the file names that contain any of the tags
-        let filenames: string[] = []; 
+        let filenames: string[] = [];
 
         if (inclusive) {
             tags.forEach(tag => {
@@ -201,10 +214,19 @@ class MetadataIndex {
     }
 
     public async deleteNote(fileName: string): Promise<void> {
-        if (this.index.notes[fileName]) {
+        const note = this.index.notes[fileName];
+        if (!note) {
+            throw new NotesError(
+                `Cannot delete non-existent note: ${fileName}`,
+                ErrorCodes.FILE_NOT_FOUND
+            );
+        }
+
+        try {
             await this.markdownHandler.deleteFile(fileName);
-            // delete all replies to this note
-            for (const reply of this.index.notes[fileName].replies) {
+
+            // Delete replies
+            await Promise.all(note.replies.map(async (reply) => {
                 try {
                     await this.markdownHandler.deleteFile(reply);
                     delete this.index.replies[reply];
@@ -212,23 +234,41 @@ class MetadataIndex {
                     this.removeFromTagsAndFolders(reply);
                 } catch (error) {
                     console.error('Error deleting reply:', error);
+                    throw new NotesError(
+                        `Failed to delete reply ${reply}: ${error.message}`,
+                        ErrorCodes.FILE_WRITE_ERROR
+                    );
                 }
-            }
+            }));
 
+            // Clean up main note
             delete this.index.notes[fileName];
             this.index.noteList = this.index.noteList.filter(file => file !== fileName);
-            
             delete this.embeddings[fileName];
             this.removeFromTagsAndFolders(fileName);
 
             await this.saveIndex();
             await this.saveEmbeddings();
+        } catch (error) {
+            console.error('Error in deleteNote:', error);
+            throw new NotesError(
+                `Failed to delete note ${fileName}: ${error.message}`,
+                ErrorCodes.FILE_WRITE_ERROR
+            );
         }
     }
 
-    public deleteReply(fileName: string): void {
-        if (this.index.replies[fileName]) {
-            this.markdownHandler.deleteFile(fileName);
+    public async deleteReply(fileName: string): Promise<void> {
+        const reply = this.index.replies[fileName];
+        if (!reply) {
+            throw new NotesError(
+                `Cannot delete non-existent reply: ${fileName}`,
+                ErrorCodes.FILE_NOT_FOUND
+            );
+        }
+
+        try {
+            await this.markdownHandler.deleteFile(fileName);
             const parentFileName = this.index.replies[fileName].parentFileName;
             this.index.notes[parentFileName].replies = this.index.notes[parentFileName].replies.filter(replyFileName => replyFileName !== fileName);
             this.removeFromTagsAndFolders(fileName);
@@ -237,12 +277,16 @@ class MetadataIndex {
 
             delete this.embeddings[fileName];
             this.saveEmbeddings();
-        } else {
-            console.error('Reply not found:', fileName);
+        } catch (error) {
+            console.error('Error in deleteReply:', error);
+            throw new NotesError(
+                `Failed to delete reply ${fileName}: ${error.message}`,
+                ErrorCodes.FILE_WRITE_ERROR
+            );
         }
     }
 
-    public addNote(metadata: NoteMetadata, embedding: number[]): void {
+    public async addNote(metadata: NoteMetadata, embedding: number[]): Promise<void> {
         this.index.notes[metadata.fileName] = metadata;
         this.index.noteList = [metadata.fileName, ...this.index.noteList];
 
@@ -252,33 +296,31 @@ class MetadataIndex {
 
         this.embeddings[metadata.fileName] = embedding;
 
-        this.saveIndex();
-        this.saveEmbeddings();
+        await this.saveIndex();
+        await this.saveEmbeddings();
     }
 
-    public addReply(metadata: NoteMetadata, embedding: number[]): void {
-        // add the reply to the index
+    public async addReply(metadata: NoteMetadata, embedding: number[]): Promise<void> {
         this.index.replies[metadata.fileName] = metadata;
-        // add the reply to the parent note
         this.index.notes[metadata.parentFileName].replies.push(metadata.fileName);
-        // add the tags to the index
         metadata.tags.forEach(tag => {
             this.addTag(tag, metadata.fileName);
         });
-        this.saveIndex();
+
+        await this.saveIndex();
 
         this.embeddings[metadata.fileName] = embedding;
-        this.saveEmbeddings();
+        await this.saveEmbeddings();
     }
 
-    public updateMetadata(fileName: string, metadata: Partial<NoteMetadata>): string | null {
+    public async updateMetadata(fileName: string, metadata: Partial<NoteMetadata>): Promise<string | null> {
         if (this.index.notes[fileName]) {
             this.index.notes[fileName] = { ...this.index.notes[fileName], ...metadata };
-            this.saveIndex();
+            await this.saveIndex();
             return fileName;
         } else if (this.index.replies[fileName]) {
             this.index.replies[fileName] = { ...this.index.replies[fileName], ...metadata };
-            this.saveIndex();
+            await this.saveIndex();
             return fileName;
         }
         return null;
@@ -310,8 +352,15 @@ class MetadataIndex {
         return null;
     }
 
-    public getMetadata(fileName: string): NoteMetadata | undefined {
-        return this.index.notes[fileName] || this.index.replies[fileName];
+    public getMetadata(fileName: string): NoteMetadata {
+        const metadata = this.index.notes[fileName] || this.index.replies[fileName];
+        if (!metadata) {
+            throw new NotesError(
+                `Note not found: ${fileName}`,
+                ErrorCodes.FILE_NOT_FOUND
+            );
+        }
+        return metadata;
     }
 
     public toFrontmatterString(fileName: string): string | null {
@@ -351,107 +400,44 @@ class MetadataIndex {
         });
     }
 
-    public addTag(tag: string, fileName: string): boolean {
+    public async addTag(tag: string, fileName: string): Promise<boolean> {
         if (!this.index.tagIndex[tag]) {
             this.index.tagIndex[tag] = [];
         }
         if (!this.index.tagIndex[tag].includes(fileName)) {
             this.index.tagIndex[tag].push(fileName);
-            
-            // Also update the note's metadata
+
             const note = this.getMetadata(fileName);
             if (note && !note.tags.includes(tag)) {
                 note.tags.push(tag);
             }
-            
-            this.saveIndex();
+
+            await this.saveIndex();
             return true;
         }
         return false;
     }
 
-    public removeTag(tag: string, fileName: string): boolean {
+    public async removeTag(tag: string, fileName: string): Promise<boolean> {
         if (this.index.tagIndex[tag]) {
             this.index.tagIndex[tag] = this.index.tagIndex[tag].filter(f => f !== fileName);
             if (this.index.tagIndex[tag].length === 0) {
                 delete this.index.tagIndex[tag];
             }
-            
-            // Also update the note's metadata
+
             const note = this.getMetadata(fileName);
             if (note) {
                 note.tags = note.tags.filter(t => t !== tag);
             }
-            
-            this.saveIndex();
+
+            await this.saveIndex();
             return true;
         }
         return false;
     }
 
-        // Not used yet ---------------------------------------------------------------
-        public getNoteContent(fileName: string): Promise<string | null> {
-        const note = this.getMetadata(fileName);
-        if (!note) return Promise.resolve(null);
-        return fs.readFile(note.filePath, 'utf-8').then(content => content.replace(/^---[\s\S]*?---/, '').trim());
-    }
-
-    public static fromFrontmatterString(fileName: string, frontmatter: string, filePath: string): NoteMetadata {
-        const lines = frontmatter.split('\n');
-        const metadata: Partial<NoteMetadata> = { fileName, filePath };
-
-        lines.forEach(line => {
-            const [key, value] = line.split(':').map(part => part.trim());
-            switch (key) {
-                case 'title':
-                case 'createdAt':
-                case 'updatedAt':
-                    metadata[key] = value.replace(/^'|'$/g, '');
-                    break;
-                case 'highlight':
-                case 'highlightColor':
-                    metadata[key] = value === 'null' ? null : value;
-                    break;
-                case 'tags':
-                case 'replies':
-                case 'attachments':
-                case 'parentFileName':
-                    metadata[key] = JSON.parse(value);
-                    break;
-                case 'isReply':
-                case 'isAI':
-                    metadata[key] = value === 'true';
-                    break;
-            }
-        });
-
-        return metadata as NoteMetadata;
-    }
-
-    public getEmbedding(fileName: string): number[] | undefined {
-        return this.embeddings[fileName];
-    }
-
-    public searchTagsAndTitles(query: string): NoteMetadata[] {
-        const lowercaseQuery = query.toLowerCase();
-        return Object.values(this.index.notes).filter(note =>
-            note.title.toLowerCase().includes(lowercaseQuery) ||
-            note.tags.some(tag => tag.toLowerCase().includes(lowercaseQuery))
-        );
-    }
-
-    public getContent(fileName: string): Promise<string | null> {
-        const note = this.getMetadata(fileName);
-        if (!note) return Promise.resolve(null);
-        try {
-            return fs.readFile(note.filePath, 'utf-8').then(content => content.replace(/^---[\s\S]*?---/, '').trim());
-        } catch (error) {
-            console.error('Error reading note content:', error);
-            return Promise.resolve(null);
-        }
-    }
-    
-    public addFolder(parentFolderId: string[], newFolderName: string): string[] | null {
+    // Not used yet ---------------------------------------------------------------
+    public async addFolder(parentFolderId: string[], newFolderName: string): Promise<string[] | null> {
         const newFolderId = [...parentFolderId, newFolderName];
         const newFolder: FolderStructure = {
             id: newFolderId,
@@ -475,13 +461,13 @@ class MetadataIndex {
         if (addFolderRecursive(this.index.folderStructure)) {
             const folderPath = newFolderId.join('/');
             this.index.folderIndex[folderPath] = [];
-            this.saveIndex();
+            await this.saveIndex();
             return newFolderId;
         }
         return null;
     }
 
-    public removeFolder(folderId: string[]): boolean {
+    public async removeFolder(folderId: string[]): Promise<boolean> {
         const removeFolderRecursive = (folder: FolderStructure, parentFolder: FolderStructure | null): boolean => {
             if (JSON.stringify(folder.id) === JSON.stringify(folderId)) {
                 if (parentFolder) {
@@ -503,31 +489,31 @@ class MetadataIndex {
         };
 
         if (removeFolderRecursive(this.index.folderStructure, null)) {
-            this.saveIndex();
+            await this.saveIndex();
             return true;
         }
         return false;
     }
 
-    public addNoteToFolder(fileName: string, folderId: string): boolean {
+    public async addNoteToFolder(fileName: string, folderId: string): Promise<boolean> {
         if (this.index.folderIndex[folderId]) {
             if (!this.index.folderIndex[folderId].includes(fileName)) {
                 this.index.folderIndex[folderId].push(fileName);
-                this.saveIndex();
+                await this.saveIndex();
                 return true;
             }
         }
         return false;
     }
 
-    public removeNoteFromFolder(fileName: string, folderId: string): boolean {
+    public async removeNoteFromFolder(fileName: string, folderId: string): Promise<boolean> {
         if (this.index.folderIndex[folderId]) {
             this.index.folderIndex[folderId] = this.index.folderIndex[folderId].filter(f => f !== fileName);
-            this.saveIndex();
+            await this.saveIndex();
             return true;
         }
         return false;
     }
 }
 
-export default MetadataIndex;
+export default IndexFileHandler;
