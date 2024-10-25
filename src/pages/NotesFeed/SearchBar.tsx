@@ -3,6 +3,7 @@ import { Search, Cone, X } from 'lucide-react';
 import styles from './NotesFeed.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 import { TagSearch } from './TagsSearch';
+import { useActionButtons } from '@/contexts/ActionButtons';
 
 const SearchBar: React.FC = () => {
   const {
@@ -11,8 +12,10 @@ const SearchBar: React.FC = () => {
   } = useNotes();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSemanticSearch, setIsSemanticSearch] = useState<boolean>(true);
+  const {setIsSearchOpen} = useActionButtons();
 
   const handleSearch = async () => {
+    setIsSearchOpen(true);
     if (isSemanticSearch) {
       const similarNotes = await window.electron.ipcRenderer.invoke('semantic-search', searchQuery);
       setFilteredParentNotesFileNames(similarNotes);
@@ -26,6 +29,7 @@ const SearchBar: React.FC = () => {
     setSearchQuery('');
     setBasicSearchQuery('');
     setFilteredParentNotesFileNames(null);
+    setIsSearchOpen(false);
   };
 
   return (

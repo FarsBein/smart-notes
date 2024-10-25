@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { useActionButtons } from './ActionButtons';
 
 interface NotesContextType {
     filteredParentNotesFileNames: string[];
@@ -8,6 +9,8 @@ interface NotesContextType {
     parentNotesFileNames: string[];
     setParentNotesFileNames: React.Dispatch<React.SetStateAction<string[]>>;
     filterByTags: (tags: string[]) => void;
+    selectedTags: string[];
+    setSelectedTags: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -17,6 +20,9 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const [filteredParentNotesFileNames, setFilteredParentNotesFileNames] = useState<string[] | null>(null);
     const [basicSearchQuery, setBasicSearchQuery] = useState<string>('');
     const [parentNotesFileNames, setParentNotesFileNames] = useState<string[]>([]);
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const {setIsSearchOpen} = useActionButtons();
+
 
     useEffect(() => {
         const initializeNoteIndex = async () => {
@@ -58,6 +64,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
 
     const filterByTags = async (tags: string[]) => {
+        setIsSearchOpen(true);
         console.log('filterByTags tags:', tags);
         const filenamesThatContainsTags = await window.electron.ipcRenderer.invoke('get-filenames-that-contains-tags', tags);
         console.log('filterByTags filenamesThatContainsTags:', filenamesThatContainsTags);
@@ -72,6 +79,8 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         parentNotesFileNames,
         setParentNotesFileNames,
         filterByTags,
+        selectedTags,
+        setSelectedTags,
     };
 
     return <NotesContext.Provider value={value}>{children}</NotesContext.Provider>;

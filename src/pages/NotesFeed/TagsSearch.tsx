@@ -4,7 +4,6 @@ import styles from './NotesFeed.module.scss';
 import { useNotes } from '@/contexts/NotesContext';
 
 export const TagSearch = () => {
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -12,7 +11,7 @@ export const TagSearch = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const [indexedTags, setIndexedTags] = useState<string[]>([]);
-  const { filterByTags, setFilteredParentNotesFileNames } = useNotes();
+  const { filterByTags, setFilteredParentNotesFileNames, selectedTags, setSelectedTags } = useNotes();
 
   useEffect(() => {
     const getIndexedTags = async () => {

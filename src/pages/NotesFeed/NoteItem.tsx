@@ -11,7 +11,7 @@ interface NoteItemProps {
 }
 
 const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
-  const { basicSearchQuery, setParentNotesFileNames } = useNotes();
+  const { basicSearchQuery, setParentNotesFileNames, filterByTags, selectedTags, setSelectedTags } = useNotes();
 
   const [content, setContent] = useState<string>('');
   const [editingNote, setEditingNote] = useState<string | null>(null);
@@ -163,6 +163,14 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
     return null;
   }
 
+  const handleTagClick = (tag: string) => {
+    setSelectedTags(prev => {
+        const newTags = [...prev, tag];
+        filterByTags(newTags);
+        return newTags;
+    });
+  };
+
   return (
     <>
       <div className={styles['notes-container']}>
@@ -187,7 +195,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
               <>
                 <div className={styles['note-tags-container']}>
                   <div className={styles['note-tags']}>
-                    {metadata?.tags.length > 0 ? metadata?.tags?.map((tag: string, i: number) => <span key={i}>{tag}</span>) : <span style={{ height: 'var(--spacing-5)' }}></span>}
+                    {metadata?.tags.length > 0 ? metadata?.tags?.map((tag: string, i: number) => <span onClick={() => handleTagClick(tag)} key={i}>{tag}</span>) : <span style={{ height: 'var(--spacing-5)' }}></span>}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--spacing-1)', justifyContent: 'space-between' }}>
