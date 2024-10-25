@@ -232,3 +232,12 @@ ipcMain.handle('update-note', async (event, fileName: string, newContent: string
     markdownHandler.updateContent(fileName, newContent);
     markdownHandler.updateTags(fileName, newTags);
 });
+
+ipcMain.handle('get-indexed-tags', async (event) => {
+    return metadataIndex.getIndexedTags();
+});
+
+ipcMain.handle('get-filenames-that-contains-tags', async (event, tags: string[]) => {
+    return metadataIndex.getFilenamesThatContainsTags(tags);
+});
+

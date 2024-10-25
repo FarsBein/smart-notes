@@ -7,6 +7,7 @@ interface NotesContextType {
     setBasicSearchQuery: React.Dispatch<React.SetStateAction<string>>;
     parentNotesFileNames: string[];
     setParentNotesFileNames: React.Dispatch<React.SetStateAction<string[]>>;
+    filterByTags: (tags: string[]) => void;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -55,6 +56,14 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         };
     }, []);
 
+
+    const filterByTags = async (tags: string[]) => {
+        console.log('filterByTags tags:', tags);
+        const filenamesThatContainsTags = await window.electron.ipcRenderer.invoke('get-filenames-that-contains-tags', tags);
+        console.log('filterByTags filenamesThatContainsTags:', filenamesThatContainsTags);
+        setFilteredParentNotesFileNames(filenamesThatContainsTags);
+    };
+
     const value = {
         filteredParentNotesFileNames,
         setFilteredParentNotesFileNames,
@@ -62,6 +71,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setBasicSearchQuery,
         parentNotesFileNames,
         setParentNotesFileNames,
+        filterByTags,
     };
 
     return <NotesContext.Provider value={value}>{children}</NotesContext.Provider>;

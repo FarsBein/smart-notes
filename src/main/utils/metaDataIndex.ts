@@ -155,6 +155,48 @@ class MetadataIndex {
         return null;
     }
 
+    public getIndexedTags(): string[] {
+        return Object.keys(this.index.tagIndex);
+    }
+
+    private exclusiveTagSearch(tagIndex: Record<string, string[]>, tags: string[]): string[] {
+        // Get the filenames for each tag, filter undefined, and sort by length for efficiency
+        const listsOfFiles = tags
+            .map(tag => tagIndex[tag])
+            .filter(Boolean)
+            .sort((a, b) => a.length - b.length);
+    
+        // Early exit if there are no valid tags or an empty list
+        if (listsOfFiles.length === 0 || listsOfFiles[0].length === 0) return [];
+    
+        // Use a set for the smallest list and perform intersection with other lists
+        const initialSet = new Set(listsOfFiles[0]);
+        return listsOfFiles.slice(1).reduce((acc, currList) => {
+            const currSet = new Set(currList);
+            return acc.filter(file => currSet.has(file));
+        }, Array.from(initialSet));
+    }
+
+    public getFilenamesThatContainsTags(tags: string[], inclusive: boolean = false): string[] {
+        // get all the parent file names that contain the tags
+        // this means if a reply has the tag, it will get the parent note and all its replies
+        // if inclusive is true, do or operation where it gets all the file names that contain any of the tags
+        let filenames: string[] = []; 
+
+        if (inclusive) {
+            tags.forEach(tag => {
+                const filenamesThatContainTag = this.index.tagIndex[tag];
+                const parentFileNames = filenamesThatContainTag.map(fileName => this.index.replies[fileName]?.parentFileName || fileName);
+                filenames.push(...parentFileNames);
+            });
+        } else {
+            const filenamesThatContainTag = this.exclusiveTagSearch(this.index.tagIndex, tags);
+            const parentFileNames = filenamesThatContainTag.map(fileName => this.index.replies[fileName]?.parentFileName || fileName);
+            filenames = parentFileNames;
+        }
+        return [...new Set(filenames)];
+    }
+
     public deleteNote(fileName: string): void {
         if (this.index.notes[fileName]) {
             this.markdownHandler.deleteFile(fileName);
