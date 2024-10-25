@@ -5,13 +5,17 @@ import styles from './NotesFeed.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
 import ReplyItem from './ReplyItem';
+import { useAttachment } from '@/hooks/useAttachment';
+import { useNotesHelper } from '@/hooks/useNoteHelper';
 
 interface NoteItemProps {
   fileName: string;
 }
 
 const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
-  const { basicSearchQuery, setParentNotesFileNames, filterByTags, selectedTags, setSelectedTags } = useNotes();
+  const { basicSearchQuery, setParentNotesFileNames } = useNotes();
+  const { attachmentsComponent } = useAttachment();
+  const { getRelativeTime, handleTagClick, isVisible } = useNotesHelper();
 
   const [content, setContent] = useState<string>('');
   const [editingNote, setEditingNote] = useState<string | null>(null);
@@ -80,64 +84,6 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
     }
   };
 
-  const renderAttachment = (attachment: string, index: number) => {
-    const parsedAttachment = JSON.parse(attachment);
-    if (parsedAttachment.startsWith('attachments/') && (parsedAttachment.endsWith('.png') || parsedAttachment.endsWith('.jpg') || parsedAttachment.endsWith('.jpeg'))) {
-      return (
-        <img
-          key={index}
-          src={`safe-file://${parsedAttachment}`}
-          alt="Attachment"
-          onError={(e) => {
-            e.currentTarget.style.display = 'none';
-            console.error('Failed to load image:', parsedAttachment);
-          }}
-          className={styles['note-attachment-image']}
-        />
-      );
-    } else {
-      return <blockquote key={index}>{parsedAttachment}</blockquote>;
-    }
-  };
-
-  const getRelativeTime = (date: string): string => {
-    const now = new Date();
-    const pastDate = new Date(date);
-    const seconds = Math.floor((now.getTime() - pastDate.getTime()) / 1000);
-
-    let interval = Math.floor(seconds / 31536000); // years
-    if (interval >= 1) {
-      return `${interval} yr${interval !== 1 ? 's' : ''} ago`;
-    }
-
-    interval = Math.floor(seconds / 2592000); // months
-    if (interval >= 1) {
-      return `${interval} mo${interval !== 1 ? 's' : ''} ago`;
-    }
-
-    interval = Math.floor(seconds / 604800); // weeks
-    if (interval >= 1) {
-      return `${interval} wk${interval !== 1 ? 's' : ''} ago`;
-    }
-
-    interval = Math.floor(seconds / 86400); // days
-    if (interval >= 1) {
-      return `${interval} day${interval !== 1 ? 's' : ''} ago`;
-    }
-
-    interval = Math.floor(seconds / 3600); // hours
-    if (interval >= 1) {
-      return `${interval} hr${interval !== 1 ? 's' : ''} ago`;
-    }
-
-    interval = Math.floor(seconds / 60); // minutes
-    if (interval >= 1) {
-      return `${interval} min${interval !== 1 ? 's' : ''} ago`;
-    }
-
-    return `${seconds} sec${seconds !== 1 ? 's' : ''} ago`;
-  };
-
   const startReplying = () => {
     setIsReplying(true);
   };
@@ -159,17 +105,9 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
     }
   };
 
-  if (basicSearchQuery && content && !content.toLowerCase().includes(basicSearchQuery.toLowerCase())) {
+  if (!isVisible(basicSearchQuery, content)) {
     return null;
   }
-
-  const handleTagClick = (tag: string) => {
-    setSelectedTags(prev => {
-        const newTags = [...prev, tag];
-        filterByTags(newTags);
-        return newTags;
-    });
-  };
 
   return (
     <>
@@ -205,9 +143,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
               </>
             )}
           </div>
-          <div className={styles['note-attachments']}>
-            {metadata?.attachments?.map((attachment, i) => renderAttachment(attachment, i))}
-          </div>
+          {attachmentsComponent(metadata?.attachments)}
           <div className={`${styles['note-actions']} ${editingNote === fileName ? styles['editing'] : ''}`}>
             <button onClick={() => deleteNote(fileName, metadata?.isReply)}>
               <Trash2 size={16} /> Delete

@@ -93,23 +93,6 @@ body {
                 }
             }
 
-            .note-attachments-container {
-                display: flex;
-                flex-wrap: wrap;
-                gap: $spacing;
-
-                img {
-                    max-width: calc(50% - #{$spacing} / 2);
-                    object-fit: contain;
-                    border-radius: 0.5rem;
-                    transition: transform 0.3s ease;
-
-                    @media (max-width: 700px) {
-                        max-width: 100%;
-                    }
-                }
-            }
-
             .note-date {
                 color: var(--color-text-tertiary);
                 font-size: var(--font-size-sm);
@@ -179,25 +162,6 @@ body {
             &:hover .note-actions,
             .note-actions.editing {
                 opacity: 1;
-            }
-        }
-
-        .note-attachments-container {
-            margin-top: var(--spacing-3);
-
-            img {
-                max-width: 100%;
-                height: auto;
-                margin-top: var(--spacing-3);
-                border-radius: var(--border-radius-sm);
-            }
-
-            blockquote {
-                background-color: var(--color-background-primary);
-                border-left: 4px solid var(--color-border);
-                margin: var(--spacing-3) 0;
-                padding: var(--spacing-3);
-                color: var(--color-text-secondary);
             }
         }
     }

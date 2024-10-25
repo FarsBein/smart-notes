@@ -4,6 +4,8 @@ import { Trash2, Edit2, Save, X as Cancel, MessageSquare } from 'lucide-react';
 import styles from './NotesFeed.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
+import { useAttachment } from '@/hooks/useAttachment';
+import { useNotesHelper } from '@/hooks/useNoteHelper';
 
 interface ReplyItemProps {
     fileName: string;
@@ -22,7 +24,9 @@ interface NoteMetadata {
 }
 
 const ReplyItem: React.FC<ReplyItemProps> = React.memo(({ fileName, parentFileName, isLast, addReply, deleteNote }) => {
-    const { basicSearchQuery, filterByTags, setSelectedTags } = useNotes();
+    const { basicSearchQuery } = useNotes();
+    const { attachmentsComponent } = useAttachment();
+    const { getRelativeTime, handleTagClick, isVisible } = useNotesHelper();
 
     const [content, setContent] = useState<string>('');
     const [editingNote, setEditingNote] = useState<string | null>(null);
@@ -76,60 +80,7 @@ const ReplyItem: React.FC<ReplyItemProps> = React.memo(({ fileName, parentFileNa
         }
     };
 
-    const renderAttachment = (attachment: string, index: number) => {
-        try {
-            const parsedAttachment = JSON.parse(attachment);
-            if (typeof parsedAttachment === 'string' && parsedAttachment.startsWith('attachments/') &&
-                (parsedAttachment.endsWith('.png') || parsedAttachment.endsWith('.jpg') || parsedAttachment.endsWith('.jpeg'))) {
-                return (
-                    <img
-                        key={index}
-                        src={`safe-file://${parsedAttachment}`}
-                        alt="Attachment"
-                        onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            console.error('Failed to load image:', parsedAttachment);
-                        }}
-                    />
-                );
-            } else {
-                return <blockquote key={index}>{parsedAttachment}</blockquote>;
-            }
-        } catch (error) {
-            console.error('Failed to parse attachment:', error);
-            return <blockquote key={index}>{attachment}</blockquote>;
-        }
-    };
-
-    const getRelativeTime = (date: string): string => {
-        const now = new Date();
-        const pastDate = new Date(date);
-        const seconds = Math.floor((now.getTime() - pastDate.getTime()) / 1000);
-
-        let interval = Math.floor(seconds / 31536000);
-        if (interval >= 1) {
-            return `${interval} yr${interval !== 1 ? 's' : ''} ago`;
-        }
-        interval = Math.floor(seconds / 2592000);
-        if (interval >= 1) {
-            return `${interval} mo${interval !== 1 ? 's' : ''} ago`;
-        }
-        interval = Math.floor(seconds / 86400);
-        if (interval >= 1) {
-            return `${interval} day${interval !== 1 ? 's' : ''} ago`;
-        }
-        interval = Math.floor(seconds / 3600);
-        if (interval >= 1) {
-            return `${interval} hr${interval !== 1 ? 's' : ''} ago`;
-        }
-        interval = Math.floor(seconds / 60);
-        if (interval >= 1) {
-            return `${interval} min${interval !== 1 ? 's' : ''} ago`;
-        }
-        return `${seconds} sec${seconds !== 1 ? 's' : ''} ago`;
-    };
-
-    if (basicSearchQuery && content && !content.toLowerCase().includes(basicSearchQuery.toLowerCase())) {
+    if (!isVisible(basicSearchQuery, content)) {
         return null;
     }
 
@@ -147,14 +98,6 @@ const ReplyItem: React.FC<ReplyItemProps> = React.memo(({ fileName, parentFileNa
         setIsReplying(false);
         setReplyContent('');
         setEditTags('');
-    };
-
-    const handleTagClick = (tag: string) => {
-        setSelectedTags(prev => {
-            const newTags = [...prev, tag];
-            filterByTags(newTags);
-            return newTags;
-        });
     };
 
     return (
@@ -190,7 +133,7 @@ const ReplyItem: React.FC<ReplyItemProps> = React.memo(({ fileName, parentFileNa
                         </>
                     )}
                 </div>
-                {metadata?.attachments?.map((attachment, i) => renderAttachment(attachment, i))}
+                {attachmentsComponent(metadata?.attachments)}
                 <div className={`${styles['note-actions']} ${editingNote === fileName ? styles['editing'] : ''}`}>
                     <button onClick={() => deleteNote(fileName, metadata?.isReply)}>
                         <Trash2 size={16} /> Delete
