@@ -10,31 +10,20 @@ import { useNotesHelper } from '@/hooks/useNoteHelper';
 
 interface NoteItemProps {
   fileName: string;
+  fileContent: string;
+  fileMetadata: NoteMetadata;
 }
 
-const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
+const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, fileMetadata }) => {
   const { basicSearchQuery, setParentNotesFileNames } = useNotes();
   const { attachmentsComponent } = useAttachment();
   const { getRelativeTime, handleTagClick, isVisible, startEditing, saveEdit, editingNote, setEditingNote, editContent, setEditContent, editTags, setEditTags, handleTagInputChange } = useNotesHelper();
 
-  const [content, setContent] = useState<string>('');
-  const [metadata, setMetadata] = useState<NoteMetadata | null>(null);
+  const [content, setContent] = useState<string>(fileContent);
+  const [metadata, setMetadata] = useState<NoteMetadata>(fileMetadata);
   const [isReplying, setIsReplying] = useState(false);
   const [replyContent, setReplyContent] = useState('');
 
-  useEffect(() => {
-    async function getContent() {
-      try {
-        const result = await window.electron.ipcRenderer.invoke('get-all-info', fileName);
-        setContent(result.content);
-        setMetadata(result.metadata);
-        console.log('getContent get-all-info result:', result);
-      } catch (error) {
-        console.error('Error fetching note content:', error);
-      }
-    }
-    getContent();
-  }, [fileName]);
 
   const deleteNote = async (fileName: string, isReply: boolean) => {
     try {
@@ -173,7 +162,6 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName }) => {
         <ReplyItem
           key={replyFileName}
           fileName={replyFileName}
-          parentFileName={fileName}
           deleteNote={deleteNote}
           isLast={index === metadata.replies.length - 1}
           addReply={addReply}

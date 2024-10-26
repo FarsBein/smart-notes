@@ -341,6 +341,14 @@ class IndexFileHandler {
         return false;
     }
 
+    public getAllFileNames(): string[] {
+        return [...this.index.noteList, ...Object.keys(this.index.replies)];
+    }
+
+    public getAllNotesMetadata(): Record<string, NoteMetadata> {
+        return { ...this.index.notes, ...this.index.replies };
+    }
+
     // Not used yet ---------------------------------------------------------------
     public async addFolder(parentFolderId: string[], newFolderName: string): Promise<string[] | null> {
         const newFolderId = [...parentFolderId, newFolderName];

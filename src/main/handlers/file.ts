@@ -278,3 +278,23 @@ ipcMain.handle('get-indexed-tags', async (event) => {
 ipcMain.handle('get-filenames-that-contains-tags', async (event, tags: string[]) => {
     return indexFileHandler.getFilenamesThatContainsTags(tags);
 });
+
+ipcMain.handle('get-all-notes-content', async (event): Promise<Record<string, string>> => {
+    try {
+        const allFileNames = indexFileHandler.getAllFileNames();
+        const allNotesContent: Record<string, string> = {};
+        for (const fileName of allFileNames) {
+            allNotesContent[fileName] = await markdownFileHandler.getContent(fileName);
+        }
+        return allNotesContent;
+    } catch (error) {
+        console.error('Failed to get all notes content:', error);
+        throw error instanceof NotesError 
+            ? error
+            : new NotesError('UNKNOWN_ERROR', 'An unexpected error occurred');
+    }
+});
+
+ipcMain.handle('get-all-notes-metadata', async (event): Promise<Record<string, NoteMetadata>> => {
+    return indexFileHandler.getAllNotesMetadata();
+});

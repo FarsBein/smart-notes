@@ -9,7 +9,6 @@ import { useNotesHelper } from '@/hooks/useNoteHelper';
 
 interface ReplyItemProps {
     fileName: string;
-    parentFileName: string;
     isLast: boolean;
     addReply: (replyContent: string, tags: string[]) => Promise<void>;
     deleteNote: (fileName: string, isReply: boolean) => Promise<void>;
@@ -23,7 +22,7 @@ interface NoteMetadata {
     isReply: boolean;
 }
 
-const ReplyItem: React.FC<ReplyItemProps> = React.memo(({ fileName, parentFileName, isLast, addReply, deleteNote }) => {
+const ReplyItem: React.FC<ReplyItemProps> = React.memo(({ fileName, isLast, addReply, deleteNote }) => {
     const { basicSearchQuery } = useNotes();
     const { attachmentsComponent } = useAttachment();
     const { getRelativeTime, handleTagClick, isVisible, startEditing, saveEdit, editingNote, setEditingNote, editContent, setEditContent, editTags, setEditTags, handleTagInputChange } = useNotesHelper();

@@ -11,6 +11,10 @@ interface NotesContextType {
     filterByTags: (tags: string[]) => void;
     selectedTags: string[];
     setSelectedTags: React.Dispatch<React.SetStateAction<string[]>>;
+    allNotesContent: Record<string, string>;
+    setAllNotesContent: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+    allNotesMetadata: Record<string, NoteMetadata>;
+    setAllNotesMetadata: React.Dispatch<React.SetStateAction<Record<string, NoteMetadata>>>;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -22,13 +26,23 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const [parentNotesFileNames, setParentNotesFileNames] = useState<string[]>([]);
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const {setIsSearchOpen} = useActionButtons();
-
+    const [allNotesContent, setAllNotesContent] = useState<Record<string, string>>({});
+    const [allNotesMetadata, setAllNotesMetadata] = useState<Record<string, NoteMetadata>>({});
 
     useEffect(() => {
         const initializeNoteIndex = async () => {
             const parentNotesFileNames = await window.electron.ipcRenderer.invoke('get-parent-notes-file-names');
             setParentNotesFileNames(parentNotesFileNames);
-            console.log('parentNotesFileNames:', parentNotesFileNames);
+
+            const allNotesContent = await window.electron.ipcRenderer.invoke('get-all-notes-content');
+            setAllNotesContent(allNotesContent);
+
+            const allNotesMetadata = await window.electron.ipcRenderer.invoke('get-all-notes-metadata');
+            setAllNotesMetadata(allNotesMetadata);
+            
+            console.log('initializeNoteIndex parentNotesFileNames:', parentNotesFileNames);
+            console.log('initializeNoteIndex allNotesContent:', allNotesContent);
+            console.log('initializeNoteIndex allNotesMetadata:', allNotesMetadata);
         };
 
         initializeNoteIndex();
@@ -81,6 +95,10 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         filterByTags,
         selectedTags,
         setSelectedTags,
+        allNotesContent,
+        setAllNotesContent,
+        allNotesMetadata,
+        setAllNotesMetadata,
     };
 
     return <NotesContext.Provider value={value}>{children}</NotesContext.Provider>;
