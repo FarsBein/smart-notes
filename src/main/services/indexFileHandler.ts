@@ -253,9 +253,10 @@ class IndexFileHandler {
     }
 
     public getParentFileNames(fileNamesWithRepliesAndParent: string[]): string[] {
-        return fileNamesWithRepliesAndParent.map(fileName => 
+        // get unique parent file names
+        return [...new Set(fileNamesWithRepliesAndParent.map(fileName => 
             this.index.replies[fileName]?.parentFileName || fileName
-        );
+        ))];
     }
 
     public updateNoteMetadata(fileName: string, metadata: Partial<NoteMetadata>): string | null {
