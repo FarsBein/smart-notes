@@ -32,7 +32,7 @@ body {
     $circle-width: 20px;
     $line-width: 2px;
     $spacing: 10px;
-    $line-height: calc(100% + 22px);
+    $line-height: calc(100% + 21px);
     background-color: var(--color-background-primary);
 
     .notes-container {
@@ -43,7 +43,7 @@ body {
         margin: var(--spacing-4) var(--spacing-4) var(--spacing-2);
 
         .note-legend {
-            margin-top: 25px;
+            margin-top: 27px;
             margin-left: 5px;
             margin-right: 5px;
             
@@ -63,7 +63,7 @@ body {
             &-line {
                 width: $line-width;
                 position: absolute;
-                top: calc(#{$circle-width} + 4px);
+                top: calc(#{$circle-width} + 5px);
                 height: $line-height;
                 background-color: var(--color-text-tertiary);
                 border-radius: 10px;
@@ -73,7 +73,7 @@ body {
         .note-content {
             display: flex;
             flex-direction: column;
-            font-size: 18px;
+            font-size: 21px;
             flex-grow: 1;
             width: 100%;
             padding: 0 $spacing 0 $spacing;
