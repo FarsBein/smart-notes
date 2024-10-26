@@ -91,12 +91,12 @@ body {
                 font-size: var(--font-size-sm);
                 flex-shrink: 0;
                 font-weight: var(--font-weight-medium);
-                margin-top: 0.15rem; // minor adjustment to align with content
+                // margin-top: 0.15rem; // minor adjustment to align with content
             }
 
             .note-tags-container {
                 display: flex;
-                justify-content: space-between;
+                // justify-content: space-between;
                 font-size: var(--font-size-sm);
                 color: var(--color-text-tertiary);
                 font-weight: var(--font-weight-medium);

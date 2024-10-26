@@ -100,13 +100,14 @@ const ReplyItem: React.FC<ReplyItemProps> = React.memo(({ fileName, parentFileNa
                     ) : (
                         <>
                             <div className={styles['note-tags-container']}>
+                            <div className={styles['note-date']} >{getRelativeTime(metadata?.updatedAt)}</div>
+                                <div style={{ width: 'var(--spacing-3)' }}></div>
                                 <div className={styles['note-tags']}>
                                     {metadata?.tags.length > 0 ? metadata?.tags?.map((tag: string, i: number) => <span onClick={() => handleTagClick(tag)} key={i}>{tag}</span>) :  <span style={{ height: 'var(--spacing-5)' }}></span>}
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: 'var(--spacing-3)', justifyContent: 'space-between'}}>
                                 <ReactMarkdown>{content || ''}</ReactMarkdown>
-                                <div className={styles['note-date']}>{getRelativeTime(metadata?.updatedAt)}</div>
                             </div>
                         </>
                     )}
