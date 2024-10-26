@@ -1,8 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { NotesError, ErrorCodes } from './errors';
+import { NotesError, ErrorCodes } from '../utils/errors';
 
-class MarkdownFileHandler {
+export default class MarkdownFileHandler {
     private notesPath: string;
 
     constructor(notesPath: string) {
@@ -106,5 +106,3 @@ class MarkdownFileHandler {
         return metadata as NoteMetadata;
     }
 }
-
-export default MarkdownFileHandler;

@@ -2,19 +2,21 @@ import { ipcMain, app } from 'electron';
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
-import IndexFileHandler from '../utils/indexFileHandler';
 import { mainWindow } from '../main';
-import { generateEmbedding } from '../utils/embeddings';
-import MarkdownFileHandler from '../utils/markdownFileHandler';
 import { NotesError } from '../utils/errors';
+import IndexFileHandler from '../services/indexFileHandler';
+import EmbeddingFileHandler from '../services/embeddingFileHandler';
+import MarkdownFileHandler from '../services/markdownFileHandler';
 
 const notesPath = path.join(app.getPath('documents'), 'MyNotes');
 const attachmentsDir = path.join(notesPath, 'attachments');
 
 const indexPath = path.join(notesPath, 'metadata_index.json');
 const embeddingsPath = path.join(notesPath, 'embeddings.json');
-const indexFileHandler = new IndexFileHandler(indexPath, embeddingsPath, notesPath);
+
+const indexFileHandler = new IndexFileHandler(indexPath);
 const markdownFileHandler = new MarkdownFileHandler(notesPath);
+const embeddingHandler = new EmbeddingFileHandler(embeddingsPath);
 
 const timestampFileName = (currentDate: Date): string => {
     const year = String(currentDate.getFullYear()).slice(-2);
@@ -95,9 +97,8 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
         const fullNoteContent = frontmatter + noteContent;
         await markdownFileHandler.writeFile(fileName, fullNoteContent);
 
-        const embedding = await generateEmbedding(noteContent);
-
-        await indexFileHandler.addNote(metadata, embedding);
+        await embeddingHandler.addEmbedding(fileName, noteContent);
+        await indexFileHandler.addNote(fileName, metadata);
 
         event.reply('save-note-result', { success: true, filePath });
 
@@ -175,11 +176,11 @@ ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Att
         const fullNoteContent = frontmatter + noteContent;
         await markdownFileHandler.writeFile(fileName, fullNoteContent);
 
-        const embedding = await generateEmbedding(noteContent);
-        await indexFileHandler.addReply(metadata, embedding);
+        await embeddingHandler.addEmbedding(fileName, noteContent);
+        await indexFileHandler.addReply(fileName, metadata);
 
         // update the parent file with the new reply
-        const parentMetadata = await indexFileHandler.getMetadata(parentFileName);
+        const parentMetadata = indexFileHandler.getMetadata(parentFileName);
         if (parentMetadata) {
             await markdownFileHandler.updateReplies(parentFileName, [...parentMetadata.replies, fileName]);
         } else {
@@ -213,8 +214,17 @@ ipcMain.handle('get-parent-notes-file-names', async (event) => {
 });
 
 ipcMain.handle('delete-note', async (event, fileName: string) => {
+    const metadata = indexFileHandler.getMetadata(fileName);
+    const metadataOfReplies = metadata.replies.map(reply => indexFileHandler.getMetadata(reply));
+    const metadataOfAllFiles = [metadata, ...metadataOfReplies];
     try {
-        await indexFileHandler.deleteNote(fileName);
+        // TODO: optimize to update the index and embeddings files only once
+        await Promise.all(metadataOfAllFiles.map(async (metadata) => {
+            await indexFileHandler.deleteNote(metadata.fileName);
+            await indexFileHandler.deleteFileFromTags(metadata.fileName, metadata.tags);
+            await embeddingHandler.deleteEmbedding(metadata.fileName);
+            await markdownFileHandler.deleteFile(metadata.fileName);
+        }));
         return { success: true };
     } catch (error) {
         console.error('Failed to delete note:', error);
@@ -230,6 +240,7 @@ ipcMain.handle('delete-note', async (event, fileName: string) => {
 ipcMain.handle('delete-reply', async (event, fileName: string) => {
     try {
         await indexFileHandler.deleteReply(fileName);
+        await embeddingHandler.deleteEmbedding(fileName);
         return { success: true };
     } catch (error) {
         console.error('Failed to delete note:', error);
@@ -244,9 +255,9 @@ ipcMain.handle('delete-reply', async (event, fileName: string) => {
 
 ipcMain.handle('semantic-search', async (event, searchQuery: string) => {
     try {
-        const queryEmbedding = await generateEmbedding(searchQuery);
-        const similarNotes = indexFileHandler.searchSimilarNotes(queryEmbedding);
-        return similarNotes;
+        const similarFiles = await embeddingHandler.searchSimilar(searchQuery);
+        const similarParentFiles = indexFileHandler.getParentFileNames(similarFiles);
+        return similarParentFiles;
     } catch (err) {
         console.error('Failed to semantic search:', err);
         return null;
@@ -254,10 +265,8 @@ ipcMain.handle('semantic-search', async (event, searchQuery: string) => {
 });
 
 ipcMain.handle('update-note', async (event, fileName: string, newContent: string, newTags: string[]) => {
-    // update the metadata
+    // TODO: optimize updating tags or content only if they have changed
     await indexFileHandler.updateTags(fileName, newTags);
-
-    // update the note content and tags in the markdown file
     await markdownFileHandler.updateContent(fileName, newContent);
     await markdownFileHandler.updateTags(fileName, newTags);
 });

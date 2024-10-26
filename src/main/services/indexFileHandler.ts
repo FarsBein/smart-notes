@@ -1,7 +1,6 @@
-import fs from 'fs/promises';
-import { cosineSimilarity } from './embeddings';
-import MarkdownFileHandler from './markdownFileHandler';
-import { NotesError, ErrorCodes } from './errors';
+import { NotesError, ErrorCodes } from '../utils/errors';
+import { FileService } from '../utils/FileService';
+
 
 // multi line comment
 /*
@@ -86,27 +85,21 @@ interface FolderStructure {
 
 class IndexFileHandler {
     private indexPath: string;
-    private embeddingsPath: string;
     private index: IndexFileHandler;
-    private embeddings: Record<string, number[]>;
-    private markdownHandler: MarkdownFileHandler;
+    private fileService: FileService;
 
-    constructor(indexPath: string, embeddingsPath: string, notesPath: string) {
+    constructor(indexPath: string) {
         this.indexPath = indexPath;
-        this.embeddingsPath = embeddingsPath;
         this.index = {} as IndexFileHandler;
-        this.embeddings = {} as Record<string, number[]>;
+        this.fileService = new FileService();
 
         this.loadIndex().then(index => this.index = index);
-        this.loadEmbeddings().then(embeddings => this.embeddings = embeddings);
-
-        this.markdownHandler = new MarkdownFileHandler(notesPath);
     }
 
     private async loadIndex(): Promise<IndexFileHandler> {
         try {
-            const data = await fs.readFile(this.indexPath, 'utf-8');
-            return JSON.parse(data);
+            const data = await this.fileService.readJsonFile<IndexFileHandler>(this.indexPath);
+            return data;
         } catch (error) {
             console.error('Error loading index:', error);
             return {
@@ -124,29 +117,11 @@ class IndexFileHandler {
         }
     }
 
-    private async loadEmbeddings(): Promise<Record<string, number[]>> {
-        try {
-            const data = await fs.readFile(this.embeddingsPath, 'utf-8');
-            return JSON.parse(data);
-        } catch (error) {
-            console.error('Error loading embeddings:', error);
-            return {};
-        }
-    }
-
     private async saveIndex(): Promise<void> {
         try {
-            await fs.writeFile(this.indexPath, JSON.stringify(this.index, null, 2));
+            await this.fileService.writeJsonFile(this.indexPath, this.index);
         } catch (error) {
             console.error('Error saving index:', error);
-        }
-    }
-
-    private async saveEmbeddings(): Promise<void> {
-        try {
-            await fs.writeFile(this.embeddingsPath, JSON.stringify(this.embeddings, null, 2));
-        } catch (error) {
-            console.error('Error saving embeddings:', error);
         }
     }
 
@@ -214,41 +189,10 @@ class IndexFileHandler {
     }
 
     public async deleteNote(fileName: string): Promise<void> {
-        const note = this.index.notes[fileName];
-        if (!note) {
-            throw new NotesError(
-                `Cannot delete non-existent note: ${fileName}`,
-                ErrorCodes.FILE_NOT_FOUND
-            );
-        }
-
         try {
-            await this.markdownHandler.deleteFile(fileName);
-
-            // Delete replies
-            await Promise.all(note.replies.map(async (reply) => {
-                try {
-                    await this.markdownHandler.deleteFile(reply);
-                    delete this.index.replies[reply];
-                    delete this.embeddings[reply];
-                    this.removeFromTagsAndFolders(reply);
-                } catch (error) {
-                    console.error('Error deleting reply:', error);
-                    throw new NotesError(
-                        `Failed to delete reply ${reply}: ${error.message}`,
-                        ErrorCodes.FILE_WRITE_ERROR
-                    );
-                }
-            }));
-
-            // Clean up main note
             delete this.index.notes[fileName];
             this.index.noteList = this.index.noteList.filter(file => file !== fileName);
-            delete this.embeddings[fileName];
-            this.removeFromTagsAndFolders(fileName);
-
             await this.saveIndex();
-            await this.saveEmbeddings();
         } catch (error) {
             console.error('Error in deleteNote:', error);
             throw new NotesError(
@@ -259,24 +203,11 @@ class IndexFileHandler {
     }
 
     public async deleteReply(fileName: string): Promise<void> {
-        const reply = this.index.replies[fileName];
-        if (!reply) {
-            throw new NotesError(
-                `Cannot delete non-existent reply: ${fileName}`,
-                ErrorCodes.FILE_NOT_FOUND
-            );
-        }
-
         try {
-            await this.markdownHandler.deleteFile(fileName);
             const parentFileName = this.index.replies[fileName].parentFileName;
             this.index.notes[parentFileName].replies = this.index.notes[parentFileName].replies.filter(replyFileName => replyFileName !== fileName);
-            this.removeFromTagsAndFolders(fileName);
             delete this.index.replies[fileName];
-            this.saveIndex();
-
-            delete this.embeddings[fileName];
-            this.saveEmbeddings();
+            await this.saveIndex();
         } catch (error) {
             console.error('Error in deleteReply:', error);
             throw new NotesError(
@@ -286,31 +217,26 @@ class IndexFileHandler {
         }
     }
 
-    public async addNote(metadata: NoteMetadata, embedding: number[]): Promise<void> {
-        this.index.notes[metadata.fileName] = metadata;
-        this.index.noteList = [metadata.fileName, ...this.index.noteList];
+    public async addNote(fileName: string, metadata: NoteMetadata): Promise<void> {
+        this.index.notes[fileName] = metadata;
+        this.index.noteList = [fileName, ...this.index.noteList];
 
         metadata.tags.forEach(tag => {
-            this.addTag(tag, metadata.fileName);
+            this.addTag(tag, fileName);
         });
 
-        this.embeddings[metadata.fileName] = embedding;
-
         await this.saveIndex();
-        await this.saveEmbeddings();
     }
 
-    public async addReply(metadata: NoteMetadata, embedding: number[]): Promise<void> {
-        this.index.replies[metadata.fileName] = metadata;
-        this.index.notes[metadata.parentFileName].replies.push(metadata.fileName);
+    public async addReply(fileName: string, metadata: NoteMetadata): Promise<void> {
+        this.index.replies[fileName] = metadata;
+        this.index.notes[metadata.parentFileName].replies.push(fileName);
+        
         metadata.tags.forEach(tag => {
-            this.addTag(tag, metadata.fileName);
+            this.addTag(tag, fileName);
         });
 
         await this.saveIndex();
-
-        this.embeddings[metadata.fileName] = embedding;
-        await this.saveEmbeddings();
     }
 
     public async updateMetadata(fileName: string, metadata: Partial<NoteMetadata>): Promise<string | null> {
@@ -326,21 +252,10 @@ class IndexFileHandler {
         return null;
     }
 
-    public searchSimilarNotes(queryEmbedding: number[], threshold: number = 0.8): string[] {
-        const similarNotes: string[] = [];
-
-        for (const [fileName, embedding] of Object.entries(this.embeddings)) {
-            const similarity = cosineSimilarity(queryEmbedding, embedding);
-            if (similarity >= threshold) {
-                if (this.index.replies[fileName]) {
-                    similarNotes.push(this.index.replies[fileName].parentFileName);
-                } else {
-                    similarNotes.push(fileName);
-                }
-            }
-        }
-
-        return similarNotes;
+    public getParentFileNames(fileNamesWithRepliesAndParent: string[]): string[] {
+        return fileNamesWithRepliesAndParent.map(fileName => 
+            this.index.replies[fileName]?.parentFileName || fileName
+        );
     }
 
     public updateNoteMetadata(fileName: string, metadata: Partial<NoteMetadata>): string | null {
@@ -382,22 +297,11 @@ class IndexFileHandler {
             `---\n`;
     }
 
-    private removeFromTagsAndFolders(fileName: string): void {
-        // Remove from tags
-        Object.keys(this.index.tagIndex).forEach(tag => {
+    public async deleteFileFromTags(fileName: string, tags: string[]): Promise<void> {
+        tags.forEach(tag => {
             this.index.tagIndex[tag] = this.index.tagIndex[tag].filter(file => file !== fileName);
-            if (this.index.tagIndex[tag].length === 0) {
-                delete this.index.tagIndex[tag];
-            }
         });
-
-        // Remove from folders
-        Object.keys(this.index.folderIndex).forEach(folder => {
-            this.index.folderIndex[folder] = this.index.folderIndex[folder].filter(file => file !== fileName);
-            if (this.index.folderIndex[folder].length === 0) {
-                delete this.index.folderIndex[folder];
-            }
-        });
+        await this.saveIndex();
     }
 
     public async addTag(tag: string, fileName: string): Promise<boolean> {
@@ -513,6 +417,24 @@ class IndexFileHandler {
             return true;
         }
         return false;
+    }
+
+    private removeFromTagsAndFolders(fileName: string): void {
+        // Remove from tags
+        Object.keys(this.index.tagIndex).forEach(tag => {
+            this.index.tagIndex[tag] = this.index.tagIndex[tag].filter(file => file !== fileName);
+            if (this.index.tagIndex[tag].length === 0) {
+                delete this.index.tagIndex[tag];
+            }
+        });
+
+        // Remove from folders
+        Object.keys(this.index.folderIndex).forEach(folder => {
+            this.index.folderIndex[folder] = this.index.folderIndex[folder].filter(file => file !== fileName);
+            if (this.index.folderIndex[folder].length === 0) {
+                delete this.index.folderIndex[folder];
+            }
+        });
     }
 }
 
