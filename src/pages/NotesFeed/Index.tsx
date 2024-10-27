@@ -26,21 +26,35 @@ const NotesList: React.FC = () => {
     return <div>Loading notes...</div>;
   }
 
+  console.log('parentNotesFileNames:', parentNotesFileNames);
+  console.log('allNotesContent:', allNotesContent);
+
   return (
     <>
       {(filteredParentNotesFileNames ?? parentNotesFileNames).map((fileName: string) => (
         <React.Fragment key={fileName}>
           <NoteItem
+            key={fileName}
             fileName={fileName}
             fileContent={allNotesContent[fileName]}
             fileMetadata={allNotesMetadata[fileName]}
+            isLast={allNotesMetadata[fileName]?.replies.length === 0} 
           />
+          {allNotesMetadata[fileName]?.replies.map((replyFileName: string, index: number) => (
+            allNotesContent[replyFileName] &&
+            <NoteItem
+              key={replyFileName}
+              fileName={replyFileName}
+              fileContent={allNotesContent[replyFileName]}
+              fileMetadata={allNotesMetadata[replyFileName]}
+              isLast={index === allNotesMetadata[fileName].replies.length - 1}
+            />
+          ))}
         </React.Fragment>
       ))}
     </>
   );
 }
-
 
 const NotesFeed: React.FC = () => {
   const { isSearchOpen } = useActionButtons();

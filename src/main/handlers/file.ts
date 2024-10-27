@@ -102,7 +102,7 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
 
         event.reply('save-note-result', { success: true, filePath });
 
-        mainWindow.webContents.send('new-note', fileName);
+        mainWindow.webContents.send('new-note', { fileName, content: noteContent, metadata });
     } catch (error) {
         console.error('Failed to save note with embedding:', error);
         event.reply('save-note-result', { success: false, error: error.message });
@@ -213,7 +213,7 @@ ipcMain.handle('get-parent-notes-file-names', async (event) => {
     return indexFileHandler.getParentNotesFileNames();
 });
 
-ipcMain.handle('delete-note', async (event, fileName: string) => {
+ipcMain.handle('delete-note', async (event, fileName: string): Promise<void> => {
     const metadata = indexFileHandler.getMetadata(fileName);
     const metadataOfReplies = metadata.replies.map(reply => indexFileHandler.getMetadata(reply));
     const metadataOfAllFiles = [metadata, ...metadataOfReplies];
@@ -225,31 +225,24 @@ ipcMain.handle('delete-note', async (event, fileName: string) => {
             await embeddingHandler.deleteEmbedding(metadata.fileName);
             await markdownFileHandler.deleteFile(metadata.fileName);
         }));
-        return { success: true };
     } catch (error) {
         console.error('Failed to delete note:', error);
-        return {
-            success: false,
-            error: error instanceof NotesError 
-                ? { code: error.code, message: error.message }
-                : { code: 'UNKNOWN_ERROR', message: 'An unexpected error occurred' }
-        };
+        throw error instanceof NotesError 
+                ? error
+                : new NotesError('UNKNOWN_ERROR', 'An unexpected error occurred');
     }
 });
 
-ipcMain.handle('delete-reply', async (event, fileName: string) => {
+ipcMain.handle('delete-reply', async (event, fileName: string): Promise<void> => {
     try {
         await indexFileHandler.deleteReply(fileName);
         await embeddingHandler.deleteEmbedding(fileName);
-        return { success: true };
+        await markdownFileHandler.deleteFile(fileName);
     } catch (error) {
-        console.error('Failed to delete note:', error);
-        return {
-            success: false,
-            error: error instanceof NotesError 
-                ? { code: error.code, message: error.message }
-                : { code: 'UNKNOWN_ERROR', message: 'An unexpected error occurred' }
-        };
+        console.error('Failed to delete reply:', error);
+        throw error instanceof NotesError 
+                ? error
+                : new NotesError('UNKNOWN_ERROR', 'An unexpected error occurred');
     }
 });
 

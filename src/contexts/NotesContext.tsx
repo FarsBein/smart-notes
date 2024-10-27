@@ -49,8 +49,10 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, []);
 
     useEffect(() => {
-        const handleNewNote = async (newNoteFileName: string) => {
-            setParentNotesFileNames(prevParentNotesFileNames => [newNoteFileName, ...prevParentNotesFileNames]);
+        const handleNewNote = async (newNote: { fileName: string, content: string, metadata: NoteMetadata, tags: string[] }) => {
+            setParentNotesFileNames(prevParentNotesFileNames => [newNote.fileName, ...prevParentNotesFileNames]);
+            setAllNotesContent(prevAllNotesContent => ({ ...prevAllNotesContent, [newNote.fileName]: newNote.content }));
+            setAllNotesMetadata(prevAllNotesMetadata => ({ ...prevAllNotesMetadata, [newNote.fileName]: newNote.metadata }));
         };
 
         window.electron.ipcRenderer.on('new-note', handleNewNote);
