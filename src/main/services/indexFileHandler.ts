@@ -349,6 +349,11 @@ class IndexFileHandler {
         return { ...this.index.notes, ...this.index.replies };
     }
 
+    public async updateHighlight(fileName: string, selectedHighlight: string): Promise<void> {
+        this.index.notes[fileName].highlight = selectedHighlight;
+        await this.saveIndex(); 
+    }
+
     // Not used yet ---------------------------------------------------------------
     public async addFolder(parentFolderId: string[], newFolderName: string): Promise<string[] | null> {
         const newFolderId = [...parentFolderId, newFolderName];

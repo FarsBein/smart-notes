@@ -31,7 +31,7 @@ const timestampFileName = (currentDate: Date): string => {
 }
 
 // Save note to file
-ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachment[], isReply: boolean, tags: string[]) => {
+ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachment[], isReply: boolean, tags: string[], selectedHighlight: string) => {
     try {
         const currentDate = new Date();
         const createdAt = currentDate.toISOString();
@@ -69,7 +69,7 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
             title: '',
             createdAt,
             updatedAt: createdAt,
-            highlight: null,
+            highlight: selectedHighlight,
             highlightColor: null,
             tags: tags,
             attachments: processedAttachments,
@@ -109,7 +109,7 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
     }
 });
 
-ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Attachment[], parentFileName: string, tags: string[]) => {
+ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Attachment[], parentFileName: string, tags: string[], selectedHighlight: string) => {
     try {
         const currentDate = new Date();
         const createdAt = currentDate.toISOString();
@@ -147,7 +147,7 @@ ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Att
             title: '',
             createdAt,
             updatedAt: createdAt,
-            highlight: null,
+            highlight: selectedHighlight,
             highlightColor: null,
             tags: tags,
             attachments: processedAttachments,
@@ -291,3 +291,9 @@ ipcMain.handle('get-all-notes-content', async (event): Promise<Record<string, st
 ipcMain.handle('get-all-notes-metadata', async (event): Promise<Record<string, NoteMetadata>> => {
     return indexFileHandler.getAllNotesMetadata();
 });
+
+ipcMain.handle('update-highlight', async (event, fileName: string, selectedHighlight: string) => {
+    await indexFileHandler.updateHighlight(fileName, selectedHighlight);
+    await markdownFileHandler.updateHighlight(fileName, selectedHighlight);
+});
+

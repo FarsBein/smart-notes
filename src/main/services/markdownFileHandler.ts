@@ -64,6 +64,12 @@ export default class MarkdownFileHandler {
         return content.replace(/^---[\s\S]*?---/, '').trim();
     }
 
+    public async updateHighlight(fileName: string, selectedHighlight: string): Promise<void> {
+        const content = await this.readFile(fileName);
+        const updatedContent = content.replace(/highlight: [^\n]*/, `highlight: ${selectedHighlight}`);
+        await this.writeFile(fileName, updatedContent);
+    }
+
     // not used yet ------------------------------------------------------------
     public async updateReplies(fileName: string, replies: string[]): Promise<void> {
         const content = await this.readFile(fileName);

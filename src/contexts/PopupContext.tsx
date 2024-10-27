@@ -7,8 +7,8 @@ interface PopupContextType {
   setAttachments: React.Dispatch<React.SetStateAction<Attachment[]>>;
   saveStatus: string;
   setSaveStatus: (status: string) => void;
-  selectedHighlight: { name: string; color: string };
-  setSelectedHighlight: (highlight: { name: string; color: string }) => void;
+  selectedHighlight: string;
+  setSelectedHighlight: (highlight: string) => void;
   handleSave: (tagInput?: string) => void;
   handleCancel: () => void;
   isSaving: boolean;
@@ -24,7 +24,7 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [note, setNote] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [saveStatus, setSaveStatus] = useState('');
-  const [selectedHighlight, setSelectedHighlight] = useState({ name: 'None', color: '#3d3d3d' });
+  const [selectedHighlight, setSelectedHighlight] = useState<string>('None');
   const [isSaving, setIsSaving] = useState(false);
   
   useEffect(() => {
@@ -99,7 +99,7 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const handleSave = (tagInput?: string) => {
     const convertTagInputIntoArray = tagInput ? tagInput.split(' ') : [];
     const isReply = false;
-    window.electron.ipcRenderer.send('save-note', note, attachments, isReply, convertTagInputIntoArray);
+    window.electron.ipcRenderer.send('save-note', note, attachments, isReply, convertTagInputIntoArray, selectedHighlight);
     setIsSaving(true);
     setNote('');
     setAttachments([]);

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Trash2, Edit2, Save, X as Cancel, MessageSquare } from 'lucide-react';
 import styles from './NotesFeed.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
 import { useAttachment } from '@/hooks/useAttachment';
+import { HighlightOption, HighlightPicker } from '@/components/HighlightPicker/HighlightPicker';
 
 interface NoteItemProps {
   fileName: string;
@@ -19,7 +20,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
     console.error('fileContent:', fileContent);
     console.error('fileMetadata:', fileMetadata);
   }
-  
+
   const { basicSearchQuery, setParentNotesFileNames, filterByTags, setSelectedTags, setAllNotesContent, setAllNotesMetadata } = useNotes();
   const { attachmentsComponent } = useAttachment();
 
@@ -31,6 +32,13 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
   const [replyTags, setReplyTags] = useState<string>('');
   const [isReplying, setIsReplying] = useState<boolean>(false);
   const [replyContent, setReplyContent] = useState<string>('');
+  const [selectedHighlight, setSelectedHighlight] = useState<string>('None');
+
+  useEffect(() => {
+    if (metadata.highlight) {
+      setSelectedHighlight(metadata.highlight);
+    }
+  }, [metadata.highlight]);
 
   const handleTagInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -65,23 +73,23 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
 
     let interval = Math.floor(seconds / 31536000);
     if (interval >= 1) {
-        return `${interval} year${interval !== 1 ? 's' : ''}`;
+      return `${interval} year${interval !== 1 ? 's' : ''}`;
     }
     interval = Math.floor(seconds / 2592000);
     if (interval >= 1) {
-        return `${interval} month${interval !== 1 ? 's' : ''}`;
+      return `${interval} month${interval !== 1 ? 's' : ''}`;
     }
     interval = Math.floor(seconds / 86400);
     if (interval >= 1) {
-        return `${interval} day${interval !== 1 ? 's' : ''}`;
+      return `${interval} day${interval !== 1 ? 's' : ''}`;
     }
     interval = Math.floor(seconds / 3600);
     if (interval >= 1) {
-        return `${interval} hour${interval !== 1 ? 's' : ''}`;
+      return `${interval} hour${interval !== 1 ? 's' : ''}`;
     }
     interval = Math.floor(seconds / 60);
     if (interval >= 1) {
-        return `${interval} minute${interval !== 1 ? 's' : ''}`;
+      return `${interval} minute${interval !== 1 ? 's' : ''}`;
     }
     return `${seconds} second${seconds !== 1 ? 's' : ''}`;
   };
@@ -128,10 +136,12 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
           return newContent;
         });
         setAllNotesMetadata(prev => {
-          const newMetadata = { ...prev, [metadata.parentFileName]: {
-            ...prev[metadata.parentFileName],
-            replies: prev[metadata.parentFileName].replies.filter(replyFileName => replyFileName !== fileName),
-          } };
+          const newMetadata = {
+            ...prev, [metadata.parentFileName]: {
+              ...prev[metadata.parentFileName],
+              replies: prev[metadata.parentFileName].replies.filter(replyFileName => replyFileName !== fileName),
+            }
+          };
           delete newMetadata[fileName];
           return newMetadata;
         });
@@ -142,7 +152,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
           const newContent = { ...prev };
           delete newContent[fileName];
           return newContent;
-        }); 
+        });
         setAllNotesMetadata(prev => {
           const newMetadata = { ...prev };
           delete newMetadata[fileName];
@@ -167,7 +177,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
     try {
       const tags = replyTags.trim().split(/\s+/).filter(tag => tag.startsWith('#'));
       const parentFileName = metadata.isReply ? metadata.parentFileName : fileName;
-      const newReplyFileName = await window.electron.ipcRenderer.invoke('save-reply', replyContent, [], parentFileName, tags);
+      const newReplyFileName = await window.electron.ipcRenderer.invoke('save-reply', replyContent, [], parentFileName, tags, selectedHighlight);
 
       setAllNotesContent(prev => ({
         ...prev,
@@ -202,96 +212,104 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
     }
   };
 
+  const updateSelectedHighlight = useCallback((newHighlight: string) => {
+    setSelectedHighlight(newHighlight);
+    window.electron.ipcRenderer.send('update-highlight', fileName, newHighlight);
+  }, [fileName]);
+
   if (!isVisible(basicSearchQuery, content)) {
     return null;
   }
 
   return (
     <>
-        <div className={styles['notes-container']}>
-          <div className={styles['note-legend']}>
-            <div className={styles['note-legend-dot']} />
-            {!isLast && <div className={styles['note-legend-line']} />}
-          </div>
-          <div className={styles['note-content']}>
-            <div className={styles['note-content-text']}>
-              {editing ? (
-                <>
-                  <MarkdownEditor content={editContent} setContent={setEditContent} />
-                  <input
-                    type="text"
-                    value={editTags}
-                    onChange={handleTagInputChange}
-                    placeholder="Enter tags..."
-                    className={styles['tag-input']}
-                  />
-                </>
-              ) : (
-                <>
-                  <div className={styles['note-tags-container']}>
-                    <div className={styles['note-date']}>{getRelativeTime(metadata.updatedAt)}</div>
-                    <div style={{ width: 'var(--spacing-3)' }}></div>
-                    <div className={styles['note-tags']}>
-                      {metadata.tags.length > 0
-                        ? metadata.tags.map((tag, i) => (
-                            <span onClick={() => handleTagClick(tag)} key={i}>
-                              {tag}
-                            </span>
-                          ))
-                        : <span style={{ height: 'var(--spacing-5)' }}></span>}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 'var(--spacing-1)', justifyContent: 'space-between' }}>
-                    <ReactMarkdown>{content || ''}</ReactMarkdown>
-                  </div>
-                </>
-              )}
-            </div>
-            {attachmentsComponent(metadata.attachments)}
-            <div className={`${styles['note-actions']} ${editing ? styles['editing'] : ''}`}>
-              <button onClick={deleteNote}>
-                <Trash2 size={16} /> Delete
-              </button>
-              {editing ? (
-                <>
-                  <button onClick={saveEdit}>
-                    <Save size={16} /> Save
-                  </button>
-                  <button onClick={() => setEditing(false)}>
-                    <Cancel size={16} /> Cancel
-                  </button>
-                </>
-              ) : (
-                <button onClick={startEditing}>
-                  <Edit2 size={16} /> Edit
-                </button>
-              )}
-              <button onClick={startReplying}>
-                <MessageSquare size={16} /> Reply
-              </button>
-            </div>
-            {isReplying && (
-              <div className={styles['reply-container']}>
-                <MarkdownEditor content={replyContent} setContent={setReplyContent} />
+      <div className={styles['notes-container']}>
+        <div className={styles['note-legend']}>
+          <HighlightPicker
+            selectedHighlight={selectedHighlight}
+            setSelectedHighlight={updateSelectedHighlight}
+          />
+          {!isLast && <div className={styles['note-legend-line']} />}
+        </div>
+        <div className={styles['note-content']}>
+          <div className={styles['note-content-text']}>
+            {editing ? (
+              <>
+                <MarkdownEditor content={editContent} setContent={setEditContent} />
                 <input
                   type="text"
-                  value={replyTags}
-                  onChange={handleReplyTagInputChange}
+                  value={editTags}
+                  onChange={handleTagInputChange}
                   placeholder="Enter tags..."
                   className={styles['tag-input']}
                 />
-                <div className={styles['reply-actions']}>
-                  <button onClick={addReply}>
-                    <Save size={16} /> Submit Reply
-                  </button>
-                  <button onClick={cancelReply}>
-                    <Cancel size={16} /> Cancel
-                  </button>
+              </>
+            ) : (
+              <>
+                <div className={styles['note-tags-container']}>
+                  <div className={styles['note-date']}>{getRelativeTime(metadata.updatedAt)}</div>
+                  <div style={{ width: 'var(--spacing-3)' }}></div>
+                  <div className={styles['note-tags']}>
+                    {metadata.tags.length > 0
+                      ? metadata.tags.map((tag, i) => (
+                        <span onClick={() => handleTagClick(tag)} key={i}>
+                          {tag}
+                        </span>
+                      ))
+                      : <span style={{ height: 'var(--spacing-5)' }}></span>}
+                  </div>
                 </div>
-              </div>
+                <div style={{ display: 'flex', gap: 'var(--spacing-1)', justifyContent: 'space-between' }}>
+                  <ReactMarkdown>{content || ''}</ReactMarkdown>
+                </div>
+              </>
             )}
           </div>
+          {attachmentsComponent(metadata.attachments)}
+          <div className={`${styles['note-actions']} ${editing ? styles['editing'] : ''}`}>
+            <button onClick={deleteNote}>
+              <Trash2 size={16} /> Delete
+            </button>
+            {editing ? (
+              <>
+                <button onClick={saveEdit}>
+                  <Save size={16} /> Save
+                </button>
+                <button onClick={() => setEditing(false)}>
+                  <Cancel size={16} /> Cancel
+                </button>
+              </>
+            ) : (
+              <button onClick={startEditing}>
+                <Edit2 size={16} /> Edit
+              </button>
+            )}
+            <button onClick={startReplying}>
+              <MessageSquare size={16} /> Reply
+            </button>
+          </div>
+          {isReplying && (
+            <div className={styles['reply-container']}>
+              <MarkdownEditor content={replyContent} setContent={setReplyContent} />
+              <input
+                type="text"
+                value={replyTags}
+                onChange={handleReplyTagInputChange}
+                placeholder="Enter tags..."
+                className={styles['tag-input']}
+              />
+              <div className={styles['reply-actions']}>
+                <button onClick={addReply}>
+                  <Save size={16} /> Submit Reply
+                </button>
+                <button onClick={cancelReply}>
+                  <Cancel size={16} /> Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
+      </div>
       {/* {metadata.replies.map((replyFileName, index) => (
         <NoteItem
           key={replyFileName}
