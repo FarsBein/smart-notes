@@ -214,7 +214,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
 
   const updateSelectedHighlight = useCallback((newHighlight: string) => {
     setSelectedHighlight(newHighlight);
-    window.electron.ipcRenderer.send('update-highlight', fileName, newHighlight);
+    window.electron.ipcRenderer.invoke('update-highlight', fileName, newHighlight);
   }, [fileName]);
 
   if (!isVisible(basicSearchQuery, content)) {
