@@ -14,25 +14,17 @@ interface NoteItemProps {
 }
 // TODO: Optimize this component so it doesn't re-render on a change of another note's content or metadata
 const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, fileMetadata, isLast }) => {
+
+  if (!fileContent || !fileMetadata) {
+    console.error('fileContent:', fileContent);
+    console.error('fileMetadata:', fileMetadata);
+  }
+  
   const { basicSearchQuery, setParentNotesFileNames, filterByTags, setSelectedTags, setAllNotesContent, setAllNotesMetadata } = useNotes();
   const { attachmentsComponent } = useAttachment();
 
-  const [content, setContent] = useState<string>(fileContent || '');
-  const [metadata, setMetadata] = useState<NoteMetadata>(fileMetadata || {
-    fileName,
-    title: '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    highlight: null,
-    highlightColor: null,
-    filePath: '',
-    tags: [],
-    attachments: [],
-    replies: [],
-    parentFileName: '',
-    isReply: false,
-    isAI: false,
-  });
+  const [content, setContent] = useState<string>(fileContent);
+  const [metadata, setMetadata] = useState<NoteMetadata>(fileMetadata);
   const [editing, setEditing] = useState<boolean>(false);
   const [editContent, setEditContent] = useState<string>(content);
   const [editTags, setEditTags] = useState<string>(metadata.tags.join(' ') + ' ');
