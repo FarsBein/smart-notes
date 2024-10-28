@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import styles from './NotesFeed.module.scss';
-import { NotesProvider, useNotes } from '../../contexts/NotesContext';
+import { useNotes } from '../../contexts/NotesContext';
 import SearchBar from './SearchBar';
-import NoteItem from './NoteItem';
+import NoteItem from '../../components/NoteItem/NoteItem';
 import { useActionButtons } from '../../contexts/ActionButtons';
 
 const NotesList: React.FC = () => {
@@ -38,7 +38,7 @@ const NotesList: React.FC = () => {
             fileName={fileName}
             fileContent={allNotesContent[fileName]}
             fileMetadata={allNotesMetadata[fileName]}
-            isLast={allNotesMetadata[fileName]?.replies.length === 0} 
+            isLast={allNotesMetadata[fileName]?.replies.length === 0}
           />
           {allNotesMetadata[fileName]?.replies.map((replyFileName: string, index: number) => (
             allNotesContent[replyFileName] &&
@@ -60,12 +60,10 @@ const NotesFeed: React.FC = () => {
   const { isSearchOpen } = useActionButtons();
 
   return (
-    <NotesProvider>
-      <div className={styles['notes-container-wrapper']}>
-        {isSearchOpen && <SearchBar />}
-        <NotesList />
-      </div>
-    </NotesProvider>
+    <div className={styles.notesList}>
+      {isSearchOpen && <SearchBar />}
+      <NotesList />
+    </div>
   );
 };
 

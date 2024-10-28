@@ -117,7 +117,7 @@ class IndexFileHandler {
         }
     }
 
-    private async saveIndex(): Promise<void> {
+    public async saveIndex(): Promise<void> {
         try {
             await this.fileService.writeJsonFile(this.indexPath, this.index);
         } catch (error) {
@@ -188,11 +188,17 @@ class IndexFileHandler {
         return [...new Set(filenames)];
     }
 
-    public async deleteNote(fileName: string): Promise<void> {
+    public async deleteNoteOrReply(fileName: string, saveImmediately: boolean = true): Promise<void> {
         try {
-            delete this.index.notes[fileName];
-            this.index.noteList = this.index.noteList.filter(file => file !== fileName);
-            await this.saveIndex();
+            if (this.index.notes[fileName]) {
+                delete this.index.notes[fileName];
+                this.index.noteList = this.index.noteList.filter(file => file !== fileName);
+            } else if (this.index.replies[fileName]) {
+                delete this.index.replies[fileName];
+            }
+            if (saveImmediately) {
+                await this.saveIndex();
+            }
         } catch (error) {
             console.error('Error in deleteNote:', error);
             throw new NotesError(
@@ -202,12 +208,31 @@ class IndexFileHandler {
         }
     }
 
-    public async deleteReply(fileName: string): Promise<void> {
+    public async deleteNote(fileName: string, saveImmediately: boolean = true): Promise<void> {
+        try {
+            delete this.index.notes[fileName];
+            this.index.noteList = this.index.noteList.filter(file => file !== fileName);
+            if (saveImmediately) {
+                await this.saveIndex();
+            }
+        } catch (error) {
+            console.error('Error in deleteNote:', error);
+            throw new NotesError(
+                `Failed to delete note ${fileName}: ${error.message}`,
+                ErrorCodes.FILE_WRITE_ERROR
+            );
+        }
+    }
+
+    public async deleteReply(fileName: string, saveImmediately: boolean = true): Promise<void> {
         try {
             const parentFileName = this.index.replies[fileName].parentFileName;
             this.index.notes[parentFileName].replies = this.index.notes[parentFileName].replies.filter(replyFileName => replyFileName !== fileName);
             delete this.index.replies[fileName];
-            await this.saveIndex();
+
+            if (saveImmediately) {
+                await this.saveIndex();
+            }
         } catch (error) {
             console.error('Error in deleteReply:', error);
             throw new NotesError(
@@ -298,11 +323,13 @@ class IndexFileHandler {
             `---\n`;
     }
 
-    public async deleteFileFromTags(fileName: string, tags: string[]): Promise<void> {
+    public async deleteFileFromTags(fileName: string, tags: string[], saveImmediately: boolean = true): Promise<void> {
         tags.forEach(tag => {
             this.index.tagIndex[tag] = this.index.tagIndex[tag].filter(file => file !== fileName);
         });
-        await this.saveIndex();
+        if (saveImmediately) {
+            await this.saveIndex();
+        }
     }
 
     public async addTag(tag: string, fileName: string): Promise<boolean> {

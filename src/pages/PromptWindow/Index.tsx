@@ -1,4 +1,4 @@
-import React, { DragEvent } from 'react';
+import React, { DragEvent, useState } from 'react';
 
 import { PopupProvider, usePopupContext } from '../../contexts/PopupContext';
 import Header from './Header';
@@ -7,11 +7,10 @@ import AttachmentList from './AttachmentList';
 import Footer from './Footer';
 import { Check, Loader2 } from 'lucide-react';
 import styles from './PromptWindow.module.scss';
+import NoteItem from '../../components/NoteItem/NoteItem';
 
 const PopupContent: React.FC = () => {
-  const { attachments, setAttachments, isSaving, saveStatus, handleClipboard } = usePopupContext();
-
-  
+  const { attachments, setAttachments, isSaving, saveStatus, handleClipboard, thread } = usePopupContext();
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -24,28 +23,37 @@ const PopupContent: React.FC = () => {
     e.preventDefault();
   };
 
+
   return (
-        isSaving ? 
-        <div className={styles['saving-container']}>
-          <div className={styles['saving-content']}>
+    isSaving ?
+      <div className={styles['saving-container']}>
+        <div className={styles['saving-content']}>
           <Loader2 className={styles['loading-icon']} size={16} />
           <p>Saving</p>
-          </div>
-        </div> :
+        </div>
+      </div> :
 
-        saveStatus ? 
+      saveStatus ?
         <div className={styles['save-status-container']}>
           <div className={styles['save-status-content']}>
             <Check className={styles['save-status']} size={18} />
             <p>{saveStatus}</p>
           </div>
-        </div> : 
-        
+        </div> :
+
         <div className={styles['popup']} onDrop={handleDrop} onDragOver={handleDragOver}>
-          <Header />
-          <TextArea />
-          <AttachmentList attachments={attachments} setAttachments={setAttachments} />
-          <Footer />  
+          <div className={styles['popup__thread']}>
+            {thread.map(({ fileName, metadata, content }) => (
+              metadata && content && <NoteItem key={fileName} fileName={fileName} fileContent={content} fileMetadata={metadata} isLast={false} />
+            ))}
+            {thread.length > 0 && <div style={{ marginTop: 'var(--spacing-5)' }}></div>}
+          </div>
+          <div className={styles['popup__editor']}>
+            <Header />
+            <TextArea />
+            <AttachmentList attachments={attachments} setAttachments={setAttachments} />
+            <Footer />
+          </div>
         </div>
   );
 };

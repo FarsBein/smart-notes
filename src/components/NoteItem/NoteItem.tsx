@@ -1,18 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Trash2, Edit2, Save, X as Cancel, MessageSquare } from 'lucide-react';
-import styles from './NotesFeed.module.scss';
+import styles from './NoteItem.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
-import { useAttachment } from '@/hooks/useAttachment';
+import { useAttachment } from '@/hooks/UseAttachement/useAttachment';
 import { HighlightOption, HighlightPicker } from '@/components/HighlightPicker/HighlightPicker';
 
 interface NoteItemProps {
   fileName: string;
-  fileContent?: string;
-  fileMetadata?: NoteMetadata;
-  isLast?: boolean; // Used for ReplyItem to determine UI rendering
+  fileContent: string;
+  fileMetadata: NoteMetadata;
+  isLast: boolean; // Used for ReplyItem to determine UI rendering
 }
+
 // TODO: Optimize this component so it doesn't re-render on a change of another note's content or metadata
 const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, fileMetadata, isLast }) => {
 
@@ -175,10 +176,11 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
 
   const addReply = async () => {
     try {
+      // TODO UPDATE Meta data using result.metadata
       const tags = replyTags.trim().split(/\s+/).filter(tag => tag.startsWith('#'));
       const parentFileName = metadata.isReply ? metadata.parentFileName : fileName;
-      const newReplyFileName = await window.electron.ipcRenderer.invoke('save-reply', replyContent, [], parentFileName, tags, selectedHighlight);
-
+      const result = await window.electron.ipcRenderer.invoke('save-reply', replyContent, [], parentFileName, tags, selectedHighlight);
+      const newReplyFileName = result.fileName;
       setAllNotesContent(prev => ({
         ...prev,
         [newReplyFileName]: replyContent,
@@ -222,102 +224,93 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
   }
 
   return (
-    <>
-      <div className={styles['notes-container']}>
-        <div className={styles['note-legend']}>
-          <HighlightPicker
-            selectedHighlight={selectedHighlight}
-            setSelectedHighlight={updateSelectedHighlight}
-          />
-          {!isLast && <div className={styles['note-legend-line']} />}
-        </div>
-        <div className={styles['note-content']}>
-          <div className={styles['note-content-text']}>
-            {editing ? (
-              <>
-                <MarkdownEditor content={editContent} setContent={setEditContent} />
-                <input
-                  type="text"
-                  value={editTags}
-                  onChange={handleTagInputChange}
-                  placeholder="Enter tags..."
-                  className={styles['tag-input']}
-                />
-              </>
-            ) : (
-              <>
-                <div className={styles['note-tags-container']}>
-                  <div className={styles['note-date']}>{getRelativeTime(metadata.updatedAt)}</div>
-                  <div style={{ width: 'var(--spacing-3)' }}></div>
-                  <div className={styles['note-tags']}>
-                    {metadata.tags.length > 0
-                      ? metadata.tags.map((tag, i) => (
-                        <span onClick={() => handleTagClick(tag)} key={i}>
-                          {tag}
-                        </span>
-                      ))
-                      : <span style={{ height: 'var(--spacing-5)' }}></span>}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 'var(--spacing-1)', justifyContent: 'space-between' }}>
-                  <ReactMarkdown>{content || ''}</ReactMarkdown>
-                </div>
-              </>
-            )}
-          </div>
-          {attachmentsComponent(metadata.attachments)}
-          <div className={`${styles['note-actions']} ${editing ? styles['editing'] : ''}`}>
-            <button onClick={deleteNote}>
-              <Trash2 size={16} /> Delete
-            </button>
-            {editing ? (
-              <>
-                <button onClick={saveEdit}>
-                  <Save size={16} /> Save
-                </button>
-                <button onClick={() => setEditing(false)}>
-                  <Cancel size={16} /> Cancel
-                </button>
-              </>
-            ) : (
-              <button onClick={startEditing}>
-                <Edit2 size={16} /> Edit
-              </button>
-            )}
-            <button onClick={startReplying}>
-              <MessageSquare size={16} /> Reply
-            </button>
-          </div>
-          {isReplying && (
-            <div className={styles['reply-container']}>
-              <MarkdownEditor content={replyContent} setContent={setReplyContent} />
+    <div className={styles.container}>
+      <div className={styles.legend}>
+        <HighlightPicker
+          selectedHighlight={selectedHighlight}
+          setSelectedHighlight={updateSelectedHighlight}
+        />
+        {!isLast && <div className={styles.legendLine} />}
+      </div>
+      <div className={styles.content}>
+        <div className={styles.contentText}>
+          {editing ? (
+            <>
+              <MarkdownEditor content={editContent} setContent={setEditContent} />
               <input
                 type="text"
-                value={replyTags}
-                onChange={handleReplyTagInputChange}
+                value={editTags}
+                onChange={handleTagInputChange}
                 placeholder="Enter tags..."
                 className={styles['tag-input']}
               />
-              <div className={styles['reply-actions']}>
-                <button onClick={addReply}>
-                  <Save size={16} /> Submit Reply
-                </button>
-                <button onClick={cancelReply}>
-                  <Cancel size={16} /> Cancel
-                </button>
+            </>
+          ) : (
+            <>
+              <div className={styles.metadata}>
+                <div className={styles.metadataDate}>{getRelativeTime(metadata.updatedAt)}</div>
+                <div style={{ width: 'var(--spacing-3)' }}></div>
+                <div className={styles.metadataTags}>
+                  {metadata.tags.length > 0
+                    ? metadata.tags.map((tag, i) => (
+                      <span onClick={() => handleTagClick(tag)} key={i}>
+                        {tag}
+                      </span>
+                    ))
+                    : <span style={{ height: 'var(--spacing-5)' }}></span>}
+                </div>
               </div>
-            </div>
+              <div style={{ display: 'flex', gap: 'var(--spacing-1)', justifyContent: 'space-between' }}>
+                <ReactMarkdown>{content || ''}</ReactMarkdown>
+              </div>
+            </>
           )}
         </div>
+        {attachmentsComponent(metadata.attachments)}
+        <div className={`${styles.actions} ${editing ? styles.editing : ''}`}>
+          <button onClick={deleteNote}>
+            <Trash2 size={16} /> Delete
+          </button>
+          {editing ? (
+            <>
+              <button onClick={saveEdit}>
+                <Save size={16} /> Save
+              </button>
+              <button onClick={() => setEditing(false)}>
+                <Cancel size={16} /> Cancel
+              </button>
+            </>
+          ) : (
+            <button onClick={startEditing}>
+              <Edit2 size={16} /> Edit
+            </button>
+          )}
+          <button onClick={startReplying}>
+            <MessageSquare size={16} /> Reply
+          </button>
+        </div>
+        {isReplying && (
+          <div className={styles['reply-container']}>
+            <MarkdownEditor content={replyContent} setContent={setReplyContent} />
+            <input
+              type="text"
+              value={replyTags}
+              onChange={handleReplyTagInputChange}
+              placeholder="Enter tags..."
+              className={styles['tag-input']}
+            />
+            <div className={styles['reply-actions']}>
+              <button onClick={addReply}>
+                <Save size={16} /> Submit Reply
+              </button>
+              <button onClick={cancelReply}>
+                <Cancel size={16} /> Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-      {/* {metadata.replies.map((replyFileName, index) => (
-        <NoteItem
-          key={replyFileName}
-          fileName={replyFileName}
-          isLast={index === metadata.replies.length - 1}
-        />
-      ))} */}
-    </>
+    </div>
   );
 });
 

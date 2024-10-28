@@ -111,7 +111,7 @@ function createPopup() {
 
   popupWindow.webContents.session.setSpellCheckerLanguages(['en-US', 'en-CA']);
 
-  // popupWindow.webContents.openDevTools();
+  popupWindow.webContents.openDevTools();
 
   // Load the correct URL for the popup
   const popupUrl = new URL(MAIN_WINDOW_WEBPACK_ENTRY);

@@ -1,12 +1,12 @@
 import React, { ChangeEvent, useState, KeyboardEvent } from 'react';
-import { Image, Code, Quote } from 'lucide-react';
+import { Image, Code, Quote, MessageCircle } from 'lucide-react';
 import SearchDropdown from './SearchDropdown';
 import { usePopupContext } from '../../contexts/PopupContext';
 import styles from './PromptWindow.module.scss';
 
 const Footer: React.FC = () => {
-  const { handleSave, handleCancel, setAttachments, attachments, saveStatus } = usePopupContext();
-  const [tagInput, setTagInput] = useState<string | undefined>(undefined);
+  const { handleSave, handleCancel, setAttachments, attachments, saveStatus, handleThread, tagInput, setTagInput } = usePopupContext();
+  
  
   const handleTagInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -27,7 +27,7 @@ const Footer: React.FC = () => {
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSave(tagInput?.trim());
+      handleSave();
     } else if (e.key === 'Backspace' && e.shiftKey) {
       e.preventDefault();
       setAttachments([]);
@@ -74,6 +74,8 @@ const Footer: React.FC = () => {
     }
   };
 
+  
+
   return (
     <div className={styles['popup__footer']}>
       <div className={styles['popup__left-container']}>
@@ -107,9 +109,13 @@ const Footer: React.FC = () => {
           <button onClick={handleQuote} className={styles['popup__action-btn']}>
             <Quote size={20} />
           </button> */}
+          {/* start thread button */}
+          <button className={styles['popup__action-btn']} onClick={handleThread}>
+            <MessageCircle size={20} />
+          </button>
         </div>
         <button className={styles['popup__post-btn']} onClick={handleCancel}>Cancel</button>
-        <button className={styles['popup__post-btn']} onClick={() => handleSave(tagInput?.trim())} disabled={!!saveStatus}>{saveStatus || 'Save'}</button>
+        <button className={styles['popup__post-btn']} onClick={handleSave} disabled={!!saveStatus}>{saveStatus || 'Save'}</button>
       </div>
     </div>
   );

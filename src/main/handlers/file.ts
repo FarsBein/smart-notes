@@ -109,6 +109,83 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
     }
 });
 
+ipcMain.handle('save-note', async (event, noteContent: string, attachments: Attachment[], isReply: boolean, tags: string[], selectedHighlight: string) => {
+    try {
+        const currentDate = new Date();
+        const createdAt = currentDate.toISOString();
+        const fileName = timestampFileName(currentDate);
+        const filePath = path.join(notesPath, fileName);
+
+        // Ensure directories exist
+        await fs.mkdir(notesPath, { recursive: true });
+        await fs.mkdir(attachmentsDir, { recursive: true });
+
+        // Process attachments
+        const processedAttachments = await Promise.all(attachments.map(async (attachment: Attachment) => {
+            switch (attachment.type) {
+                case 'url':
+                    return JSON.stringify(attachment.content);
+                case 'text':
+                    // TODO: find a better way to handle new line in quotes attachments 
+                    return JSON.stringify(attachment.content.replace(/\n/g, ''));
+                case 'image':
+                    const imgContentBase64Data = attachment.content.replace(/^data:image\/png;base64,/, "");
+                    const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
+                    const imgFilePath = path.join('attachments', imgFileName);
+                    const normalizedImgPath = path.normalize(imgFilePath); // Normalize the path to remove any potential double slashes
+                    await fs.mkdir(attachmentsDir, { recursive: true });
+                    await fs.writeFile(path.join(attachmentsDir, imgFileName), Buffer.from(imgContentBase64Data, 'base64'));
+                    const markdownImgPath = normalizedImgPath.split(path.sep).join('/'); // Ensure the path uses forward slashes for Markdown compatibility
+                    return JSON.stringify(markdownImgPath);
+                default:
+                    return '';
+            }
+        })).then(results => results.filter(Boolean)); // Removes empty strings
+
+        const metadata: NoteMetadata = {
+            fileName,
+            title: '',
+            createdAt,
+            updatedAt: createdAt,
+            highlight: selectedHighlight,
+            highlightColor: null,
+            tags: tags,
+            attachments: processedAttachments,
+            replies: [],
+            parentFileName: '',
+            isReply: isReply,
+            isAI: false,
+            filePath
+        };
+
+        const frontmatter = `---\n` +
+            `title: '${metadata.title}'\n` +
+            `createdAt: '${metadata.createdAt}'\n` +
+            `updatedAt: '${metadata.updatedAt}'\n` +
+            `highlight: ${metadata.highlight}\n` +
+            `highlightColor: ${metadata.highlightColor}\n` +
+            `tags: ${JSON.stringify(metadata.tags)}\n` +
+            `attachments: [${metadata.attachments.join(', ')}]\n` +
+            `parentFileName: '${metadata.parentFileName}'\n` +
+            `replies: [${metadata.replies.join(', ')}]\n` +
+            `isReply: ${metadata.isReply}\n` +
+            `isAI: ${metadata.isAI}\n` +
+            `---\n`;
+
+        const fullNoteContent = frontmatter + noteContent;
+        await markdownFileHandler.writeFile(fileName, fullNoteContent);
+
+        await embeddingHandler.addEmbedding(fileName, noteContent);
+        await indexFileHandler.addNote(fileName, metadata);
+
+        return { fileName, metadata, content: noteContent };
+    } catch (error) {
+        console.error('Failed to save note with embedding:', error);
+        throw error;
+    }
+});
+
+
 ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Attachment[], parentFileName: string, tags: string[], selectedHighlight: string) => {
     try {
         const currentDate = new Date();
@@ -187,7 +264,7 @@ ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Att
             console.error('Parent note not found:', parentFileName);
         }
 
-        return fileName;
+        return { fileName, metadata, content: noteContent };
     } catch (error) {
         console.error('Failed to save reply with embedding:', error);
         return null;
@@ -218,13 +295,17 @@ ipcMain.handle('delete-note', async (event, fileName: string): Promise<void> => 
     const metadataOfReplies = metadata.replies.map(reply => indexFileHandler.getMetadata(reply));
     const metadataOfAllFiles = [metadata, ...metadataOfReplies];
     try {
-        // TODO: optimize to update the index and embeddings files only once
         await Promise.all(metadataOfAllFiles.map(async (metadata) => {
-            await indexFileHandler.deleteNote(metadata.fileName);
-            await indexFileHandler.deleteFileFromTags(metadata.fileName, metadata.tags);
-            await embeddingHandler.deleteEmbedding(metadata.fileName);
+            await indexFileHandler.deleteNoteOrReply(metadata.fileName, false);
+            await indexFileHandler.deleteFileFromTags(metadata.fileName, metadata.tags, false);
+            await embeddingHandler.deleteEmbedding(metadata.fileName, false);
             await markdownFileHandler.deleteFile(metadata.fileName);
         }));
+        
+        await Promise.all([
+            indexFileHandler.saveIndex(),
+            embeddingHandler.saveEmbeddings()
+        ]);
     } catch (error) {
         console.error('Failed to delete note:', error);
         throw error instanceof NotesError 

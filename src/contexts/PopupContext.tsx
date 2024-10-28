@@ -9,13 +9,18 @@ interface PopupContextType {
   setSaveStatus: (status: string) => void;
   selectedHighlight: string;
   setSelectedHighlight: (highlight: string) => void;
-  handleSave: (tagInput?: string) => void;
+  handleSave: () => void;
   handleCancel: () => void;
   isSaving: boolean;
   isValidUrl: (string: string) => boolean;
   handleImageFile: (file: File) => void;
   addAttachment: (type: Attachment['type'], content: string) => void;
   handleClipboard: (items: DataTransferItemList) => void;
+  thread: {fileName: string, metadata: NoteMetadata, content: string}[];
+  setThread: React.Dispatch<React.SetStateAction<{fileName: string, metadata: NoteMetadata, content: string}[]>>;
+  handleThread: () => void;
+  tagInput: string;
+  setTagInput: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const PopupContext = createContext<PopupContextType | undefined>(undefined);
@@ -26,7 +31,9 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [saveStatus, setSaveStatus] = useState('');
   const [selectedHighlight, setSelectedHighlight] = useState<string>('None');
   const [isSaving, setIsSaving] = useState(false);
-  
+  const [thread, setThread] = useState<{fileName: string, metadata: NoteMetadata, content: string}[]>([]);
+  const [tagInput, setTagInput] = useState<string>('');
+
   useEffect(() => {
     const ipc = window.electron.ipcRenderer;
 
@@ -41,7 +48,7 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (result.success) {
         setSaveStatus('Saved!');
         setIsSaving(false);
-        ipc.send('close-popup');
+        handleCancel();
       } else {
         setSaveStatus(`Failed to save note: ${result.error || 'Unknown error'}`);
         setIsSaving(false);
@@ -96,16 +103,49 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   
-  const handleSave = (tagInput?: string) => {
-    const convertTagInputIntoArray = tagInput ? tagInput.split(' ') : [];
-    const isReply = false;
-    window.electron.ipcRenderer.send('save-note', note, attachments, isReply, convertTagInputIntoArray, selectedHighlight);
-    setIsSaving(true);
-    setNote('');
-    setAttachments([]);
+  const handleSave = () => {
+    if (note.trim().length > 0) {
+      const tagInputTrimmed = tagInput?.trim();
+      const convertTagInputIntoArray = tagInputTrimmed ? tagInputTrimmed.split(' ') : [];
+      const isReply = false;
+      window.electron.ipcRenderer.send('save-note', note, attachments, isReply, convertTagInputIntoArray, selectedHighlight);
+
+      setIsSaving(true);
+      setNote('');
+      setAttachments([]);
+    }
+    handleCancel();
   };
 
+  const handleThread = async () => {
+    if (note.trim() === '') return;
+    
+    const tagInputTrimmed = tagInput?.trim();
+    const convertTagInputIntoArray = tagInputTrimmed ? tagInputTrimmed.split(' ') : [];
+    if (thread.length === 0) {
+      const isReply = false;
+      const result = await window.electron.ipcRenderer.invoke('save-note', note, attachments, isReply, convertTagInputIntoArray, selectedHighlight);
+      setThread([...thread, {fileName: result.fileName, metadata: result.metadata, content: result.content}]);
+    } else {
+      const result = await window.electron.ipcRenderer.invoke('save-reply', note, attachments, thread[0].fileName, convertTagInputIntoArray, selectedHighlight);
+      setThread([...thread, {fileName: result.fileName, metadata: result.metadata, content: result.content}]);
+    }
+
+    setNote('');
+    setAttachments([]);
+    setTagInput('');
+  }
+
+
   const handleCancel = () => {
+    setNote('');
+    setAttachments([]);
+    setTagInput('');
+    setThread([]);
+    setSelectedHighlight('None');
+    setIsSaving(false);
+    setSaveStatus('');
+
     window.electron.ipcRenderer.send('close-popup');
   };
 
@@ -120,12 +160,17 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       selectedHighlight,
       setSelectedHighlight,
       handleSave,
+      handleThread,
       handleCancel,
       isSaving,
       isValidUrl,
       handleImageFile,
       addAttachment,
-      handleClipboard
+      handleClipboard,
+      thread,
+      setThread,
+      tagInput,
+      setTagInput
     }}>
       {children}
     </PopupContext.Provider>

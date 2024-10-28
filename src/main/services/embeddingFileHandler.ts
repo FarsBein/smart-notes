@@ -23,7 +23,7 @@ export default class EmbeddingFileHandler {
         }
     }
 
-    private async saveEmbeddings(): Promise<void> {
+    public async saveEmbeddings(): Promise<void> {
         try {
             await this.fileService.writeJsonFile(this.embeddingsPath, this.embeddings);
         } catch (error) {
@@ -47,9 +47,11 @@ export default class EmbeddingFileHandler {
         }
     }
 
-    public async deleteEmbedding(fileName: string): Promise<void> {
+    public async deleteEmbedding(fileName: string, saveImmediately: boolean = true): Promise<void> {
         delete this.embeddings[fileName];
-        await this.saveEmbeddings();
+        if (saveImmediately) {
+            await this.saveEmbeddings();
+        }
     }
 
     public async searchSimilar(queryEmbedding: string, threshold: number = 0.8): Promise<string[]> {
