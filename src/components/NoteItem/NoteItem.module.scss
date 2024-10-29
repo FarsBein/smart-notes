@@ -6,13 +6,13 @@
     --circle-size: 20px;
     --line-width: 2px;
     --spacing: 10px;
-    --line-height: calc(100% - 1px);
+    --line-height: calc(100% - 26px);
 
     font-size: 19px;
 }
 
 .legend {
-    margin-top: 25px;
+    margin-top: 4px;
     margin-left: 5px;
     margin-right: 5px;
     display: flex;
@@ -31,7 +31,7 @@
     &Line {
         width: var(--line-width);
         position: absolute;
-        top: calc(var(--circle-size) + 5px);
+        top: calc(var(--circle-size) + 7px);
         height: var(--line-height);
         background-color: var(--color-text-tertiary);
         border-radius: 10px;
@@ -55,9 +55,15 @@
 .metadata {
     display: flex;
     align-items: center;
+    justify-content: start;
     font-size: var(--font-size-sm);
     color: var(--color-text-tertiary);
     font-weight: var(--font-weight-medium);
+
+    &Dot {
+        margin: 0 var(--spacing-1);
+        margin-top: 3px; // weirdly, the dot is not centered vertically without this
+    }
 
     &Date {
         opacity: 0.8;
@@ -67,18 +73,18 @@
     &Tags {
         display: flex;
         flex-wrap: wrap;
-
+        align-items: center;
         span {
-            margin-right: var(--spacing);
+            // margin-right: var(--spacing);
             cursor: pointer;
 
             &:hover {
                 color: var(--color-accent);
             }
 
-            &:last-child {
-                margin-right: 0;
-            }
+            // &:last-child {
+            //     margin-right: 0;
+            // }
         }
     }
 }

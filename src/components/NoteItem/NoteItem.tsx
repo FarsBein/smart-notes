@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Trash2, Edit2, Save, X as Cancel, MessageSquare } from 'lucide-react';
+import { Trash2, Edit2, Save, X as Cancel, MessageSquare, Dot } from 'lucide-react';
 import styles from './NoteItem.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
-import { useAttachment } from '@/hooks/UseAttachement/useAttachment';
+import { useAttachment } from '@/hooks/UseAttachment/useAttachment';
 import { HighlightPicker } from '@/components/HighlightPicker/HighlightPicker';
 
 interface NoteItemProps {
@@ -67,6 +67,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
     }
   };
 
+  // TODO: make it so it update every few seconds
   const getRelativeTime = (date: string): string => {
     const now = new Date();
     const pastDate = new Date(date);
@@ -74,25 +75,25 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
 
     let interval = Math.floor(seconds / 31536000);
     if (interval >= 1) {
-      return `${interval} year${interval !== 1 ? 's' : ''}`;
+      return `${interval} year${interval !== 1 ? 's' : ''} ago`;
     }
     interval = Math.floor(seconds / 2592000);
     if (interval >= 1) {
-      return `${interval} month${interval !== 1 ? 's' : ''}`;
+      return `${interval} month${interval !== 1 ? 's' : ''} ago`;
     }
     interval = Math.floor(seconds / 86400);
     if (interval >= 1) {
-      return `${interval} day${interval !== 1 ? 's' : ''}`;
+      return `${interval} day${interval !== 1 ? 's' : ''} ago`;
     }
     interval = Math.floor(seconds / 3600);
     if (interval >= 1) {
-      return `${interval} hour${interval !== 1 ? 's' : ''}`;
+      return `${interval} hour${interval !== 1 ? 's' : ''} ago`;
     }
     interval = Math.floor(seconds / 60);
     if (interval >= 1) {
-      return `${interval} minute${interval !== 1 ? 's' : ''}`;
+      return `${interval} minute${interval !== 1 ? 's' : ''} ago`;
     }
-    return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+    return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
   };
 
   const handleTagClick = (tag: string) => {
@@ -224,93 +225,99 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.legend}>
-        <HighlightPicker
-          selectedHighlight={selectedHighlight}
-          setSelectedHighlight={updateSelectedHighlight}
-        />
-        {!isLast && <div className={styles.legendLine} />}
-      </div>
-      <div className={styles.content}>
-        <div className={styles.contentText}>
-          {editing ? (
-            <>
-              <MarkdownEditor content={editContent} setContent={setEditContent} />
+    <>
+      <div className={styles.container}>
+        <div className={styles.legend}>
+          <HighlightPicker
+            selectedHighlight={selectedHighlight}
+            setSelectedHighlight={updateSelectedHighlight}
+          />
+          {!isLast && <div className={styles.legendLine} />}
+        </div>
+        <div className={styles.content}>
+          <div className={styles.contentText}>
+            {editing ? (
+              <>
+                <MarkdownEditor content={editContent} setContent={setEditContent} />
+                <input
+                  type="text"
+                  value={editTags}
+                  onChange={handleTagInputChange}
+                  placeholder="Enter tags..."
+                  className={styles['tag-input']}
+                />
+              </>
+            ) : (
+              <>
+                <div style={{ display: 'flex', gap: 'var(--spacing-1)', justifyContent: 'space-between' }}>
+                  <ReactMarkdown>{content || ''}</ReactMarkdown>
+                </div>
+
+
+              </>
+            )}
+          </div>
+          {attachmentsComponent(metadata.attachments)}
+          <div className={styles.metadata}>
+            <div className={styles.metadataDate}>{getRelativeTime(metadata.updatedAt)}</div>
+            <div className={styles.metadataTags}>
+              {metadata.tags.map((tag, i) => (
+                <>
+                  <Dot size={8} className={styles.metadataDot} />
+                  <span onClick={() => handleTagClick(tag)} key={i}>
+                    {tag}
+                  </span>
+                </>
+              ))}
+            </div>
+          </div>
+          <div className={`${styles.actions} ${editing ? styles.editing : ''}`}>
+            <button onClick={deleteNote}>
+              <Trash2 size={16} /> Delete
+            </button>
+            {editing ? (
+              <>
+                <button onClick={saveEdit}>
+                  <Save size={16} /> Save
+                </button>
+                <button onClick={() => setEditing(false)}>
+                  <Cancel size={16} /> Cancel
+                </button>
+              </>
+            ) : (
+              <button onClick={startEditing}>
+                <Edit2 size={16} /> Edit
+              </button>
+            )}
+            <button onClick={startReplying}>
+              <MessageSquare size={16} /> Reply
+            </button>
+          </div>
+          {isReplying && (
+            <div className={styles['reply-container']}>
+              <MarkdownEditor content={replyContent} setContent={setReplyContent} />
               <input
                 type="text"
-                value={editTags}
-                onChange={handleTagInputChange}
+                value={replyTags}
+                onChange={handleReplyTagInputChange}
                 placeholder="Enter tags..."
                 className={styles['tag-input']}
               />
-            </>
-          ) : (
-            <>
-              <div className={styles.metadata}>
-                <div className={styles.metadataDate}>{getRelativeTime(metadata.updatedAt)}</div>
-                <div style={{ width: 'var(--spacing-3)' }}></div>
-                <div className={styles.metadataTags}>
-                  {metadata.tags.length > 0
-                    ? metadata.tags.map((tag, i) => (
-                      <span onClick={() => handleTagClick(tag)} key={i}>
-                        {tag}
-                      </span>
-                    ))
-                    : <span style={{ height: 'var(--spacing-5)' }}></span>}
-                </div>
+              <div className={styles['reply-actions']}>
+                <button onClick={addReply}>
+                  <Save size={16} /> Submit Reply
+                </button>
+                <button onClick={cancelReply}>
+                  <Cancel size={16} /> Cancel
+                </button>
               </div>
-              <div style={{ display: 'flex', gap: 'var(--spacing-1)', justifyContent: 'space-between' }}>
-                <ReactMarkdown>{content || ''}</ReactMarkdown>
-              </div>
-            </>
-          )}
-        </div>
-        {attachmentsComponent(metadata.attachments)}
-        <div className={`${styles.actions} ${editing ? styles.editing : ''}`}>
-          <button onClick={deleteNote}>
-            <Trash2 size={16} /> Delete
-          </button>
-          {editing ? (
-            <>
-              <button onClick={saveEdit}>
-                <Save size={16} /> Save
-              </button>
-              <button onClick={() => setEditing(false)}>
-                <Cancel size={16} /> Cancel
-              </button>
-            </>
-          ) : (
-            <button onClick={startEditing}>
-              <Edit2 size={16} /> Edit
-            </button>
-          )}
-          <button onClick={startReplying}>
-            <MessageSquare size={16} /> Reply
-          </button>
-        </div>
-        {isReplying && (
-          <div className={styles['reply-container']}>
-            <MarkdownEditor content={replyContent} setContent={setReplyContent} />
-            <input
-              type="text"
-              value={replyTags}
-              onChange={handleReplyTagInputChange}
-              placeholder="Enter tags..."
-              className={styles['tag-input']}
-            />
-            <div className={styles['reply-actions']}>
-              <button onClick={addReply}>
-                <Save size={16} /> Submit Reply
-              </button>
-              <button onClick={cancelReply}>
-                <Cancel size={16} /> Cancel
-              </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+      {isLast && <div style={{ height: 'var(--spacing-5)' }}></div>}
+    </>
+
   );
 });
 
