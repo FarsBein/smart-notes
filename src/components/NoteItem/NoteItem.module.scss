@@ -44,7 +44,6 @@
     flex-grow: 1;
     width: 100%;
     padding: 0 var(--spacing);
-    gap: var(--spacing);
 
     &Text {
         p {
@@ -101,8 +100,8 @@
         margin-right: var(--spacing-2);
         padding: var(--spacing-1) var(--spacing-2);
         border-radius: var(--border-radius-lg);
-        background-color: var(--color-background-secondary);
-        color: var(--color-text-secondary);
+        background-color: transparent;
+        color: var(--color-text-tertiary);
         border: none;
         cursor: pointer;
 
