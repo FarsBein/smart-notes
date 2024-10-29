@@ -56,11 +56,11 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     
-    ipc.on('save-note-result', handleSaveResult);
+    ipc.on('new-notes-sent', handleSaveResult);
 
     return () => {
       // ipc.removeListener('recent-clipboard-content', handleRecentClipboardContent);
-      ipc.removeListener('save-note-result', handleSaveResult);
+      ipc.removeListener('new-notes-sent', handleSaveResult);
     };
   }, [setAttachments, setSaveStatus]);
 
@@ -103,17 +103,29 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   
-  const handleSave = () => {
+  const handleSave = async () => {
     if (note.trim().length > 0) {
       const tagInputTrimmed = tagInput?.trim();
       const convertTagInputIntoArray = tagInputTrimmed ? tagInputTrimmed.split(' ') : [];
-      const isReply = false;
-      window.electron.ipcRenderer.send('save-note', note, attachments, isReply, convertTagInputIntoArray, selectedHighlight);
+
+      if (thread.length > 0) { // if there is a thread, we are saving a reply
+        const result = await window.electron.ipcRenderer.invoke('save-reply', note, attachments, thread[0].fileName, convertTagInputIntoArray, selectedHighlight);
+        window.electron.ipcRenderer.invoke('update-main-window-with-new-notes', [...thread, {fileName: result.fileName, metadata: result.metadata, content: result.content}]);
+      } else { // if there is no thread, we are saving a new note
+        const isReply = false;
+        const result = await window.electron.ipcRenderer.invoke('save-note', note, attachments, isReply, convertTagInputIntoArray, selectedHighlight);
+        window.electron.ipcRenderer.invoke('update-main-window-with-new-notes', [{ fileName: result.fileName, content: result.content, metadata: result.metadata }]);
+      }
 
       setIsSaving(true);
       setNote('');
       setAttachments([]);
+    } else {
+      if (thread.length > 0) {
+        window.electron.ipcRenderer.invoke('update-main-window-with-new-notes', thread);
+      }
     }
+
     handleCancel();
   };
 

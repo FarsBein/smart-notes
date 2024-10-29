@@ -49,7 +49,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, []);
 
     useEffect(() => {
-        const handleNewNote = async (newNote: { fileName: string, content: string, metadata: NoteMetadata, tags: string[] }) => {
+        const handleNewNote = (newNote: { fileName: string, content: string, metadata: NoteMetadata }) => {
             setParentNotesFileNames(prevParentNotesFileNames => [newNote.fileName, ...prevParentNotesFileNames]);
             setAllNotesContent(prevAllNotesContent => ({ ...prevAllNotesContent, [newNote.fileName]: newNote.content }));
             setAllNotesMetadata(prevAllNotesMetadata => ({ ...prevAllNotesMetadata, [newNote.fileName]: newNote.metadata }));
@@ -59,6 +59,20 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         return () => {
             window.electron.ipcRenderer.removeListener('new-note', handleNewNote);
+        };
+    }, []);
+
+    useEffect(() => {
+        const handleUpdateMainWindowWithNewNotes = (newNotes: {fileName: string, content: string, metadata: NoteMetadata}[]) => {
+            setParentNotesFileNames(prevParentNotesFileNames => [...newNotes.filter(note => !note.metadata.isReply).map(note => note.fileName), ...prevParentNotesFileNames]);
+            setAllNotesContent(prevAllNotesContent => ({ ...prevAllNotesContent, ...newNotes.reduce((acc, note) => ({ ...acc, [note.fileName]: note.content }), {}) }));
+            setAllNotesMetadata(prevAllNotesMetadata => ({ ...prevAllNotesMetadata, ...newNotes.reduce((acc, note) => ({ ...acc, [note.fileName]: note.metadata }), {}) }));
+            console.log('handleUpdateMainWindowWithNewNotes newNotes:', newNotes);
+        };
+
+        window.electron.ipcRenderer.on('new-notes-sent', handleUpdateMainWindowWithNewNotes);
+        return () => {
+            window.electron.ipcRenderer.removeListener('new-notes-sent', handleUpdateMainWindowWithNewNotes);
         };
     }, []);
 

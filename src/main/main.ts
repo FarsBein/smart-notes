@@ -111,7 +111,7 @@ function createPopup() {
 
   popupWindow.webContents.session.setSpellCheckerLanguages(['en-US', 'en-CA']);
 
-  popupWindow.webContents.openDevTools();
+  // popupWindow.webContents.openDevTools();
 
   // Load the correct URL for the popup
   const popupUrl = new URL(MAIN_WINDOW_WEBPACK_ENTRY);
@@ -151,6 +151,15 @@ function createPopup() {
   // Wait for the window to be ready before showing it
   popupWindow.once('ready-to-show', () => {
     popupWindow.show();
+  });
+
+  // Add focus/blur handlers for opacity
+  popupWindow.on('focus', () => {
+    popupWindow?.setOpacity(1.0);
+  });
+
+  popupWindow.on('blur', () => {
+    popupWindow?.setOpacity(0.5);
   });
 
   // Comment out the blur event handler for testing

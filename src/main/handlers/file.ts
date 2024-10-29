@@ -109,6 +109,13 @@ ipcMain.on('save-note', async (event, noteContent: string, attachments: Attachme
     }
 });
 
+ipcMain.handle('update-main-window-with-new-notes', (event, newNotes: {fileName: string, content: string, metadata?: NoteMetadata}[]) => {
+    // TODO Create a better flow that doesn't have the popup window metadata out of sync with the index which currently happens because replies are updating parent note
+    // This is just a patch for now we getting the metadata from the index for the new notes
+    const newNotesWithMetadata = newNotes.map(note => ({...note, metadata: indexFileHandler.getMetadata(note.fileName)}));
+    mainWindow.webContents.send('new-notes-sent', newNotesWithMetadata);
+});
+
 ipcMain.handle('save-note', async (event, noteContent: string, attachments: Attachment[], isReply: boolean, tags: string[], selectedHighlight: string) => {
     try {
         const currentDate = new Date();
@@ -184,7 +191,6 @@ ipcMain.handle('save-note', async (event, noteContent: string, attachments: Atta
         throw error;
     }
 });
-
 
 ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Attachment[], parentFileName: string, tags: string[], selectedHighlight: string) => {
     try {

@@ -42,6 +42,7 @@ const PopupContent: React.FC = () => {
         </div> :
 
         <div className={styles['popup']} onDrop={handleDrop} onDragOver={handleDragOver}>
+          <Header />
           <div className={styles['popup__thread']}>
             {thread.map(({ fileName, metadata, content }) => (
               metadata && content && <NoteItem key={fileName} fileName={fileName} fileContent={content} fileMetadata={metadata} isLast={false} />
@@ -49,7 +50,6 @@ const PopupContent: React.FC = () => {
             {thread.length > 0 && <div style={{ marginTop: 'var(--spacing-5)' }}></div>}
           </div>
           <div className={styles['popup__editor']}>
-            <Header />
             <TextArea />
             <AttachmentList attachments={attachments} setAttachments={setAttachments} />
             <Footer />
