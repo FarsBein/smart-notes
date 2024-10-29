@@ -377,7 +377,11 @@ class IndexFileHandler {
     }
 
     public async updateHighlight(fileName: string, selectedHighlight: string): Promise<void> {
-        this.index.notes[fileName].highlight = selectedHighlight;
+        if (this.index.notes[fileName]) {
+            this.index.notes[fileName].highlight = selectedHighlight;
+        } else if (this.index.replies[fileName]) {
+            this.index.replies[fileName].highlight = selectedHighlight;
+        }
         await this.saveIndex(); 
     }
 
