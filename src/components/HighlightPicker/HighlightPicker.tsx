@@ -20,6 +20,7 @@ const highlightOptions = [
     { name: 'Todo', color: '#FF5733' },
 ];
 
+// TODO make the selected highlight color accessible by the caller so to update the legend line color
 export const HighlightPicker: React.FC<HighlightPickerProps> = ({
     options = highlightOptions,
     selectedHighlight,

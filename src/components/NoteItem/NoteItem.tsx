@@ -5,7 +5,7 @@ import styles from './NoteItem.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
 import { useAttachment } from '@/hooks/UseAttachement/useAttachment';
-import { HighlightOption, HighlightPicker } from '@/components/HighlightPicker/HighlightPicker';
+import { HighlightPicker } from '@/components/HighlightPicker/HighlightPicker';
 
 interface NoteItemProps {
   fileName: string;
