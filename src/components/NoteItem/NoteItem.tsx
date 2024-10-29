@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Trash2, Edit2, Save, X as Cancel, MessageSquare, Dot } from 'lucide-react';
+import { Dot } from 'lucide-react';
 import styles from './NoteItem.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
@@ -273,24 +273,24 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
           </div>
           <div className={`${styles.actions} ${editing ? styles.editing : ''}`}>
             <button onClick={deleteNote}>
-              <Trash2 size={16} /> Delete
+              Delete
             </button>
             {editing ? (
               <>
                 <button onClick={saveEdit}>
-                  <Save size={16} /> Save
+                  Save
                 </button>
                 <button onClick={() => setEditing(false)}>
-                  <Cancel size={16} /> Cancel
+                  Cancel
                 </button>
               </>
             ) : (
               <button onClick={startEditing}>
-                <Edit2 size={16} /> Edit
+                Edit
               </button>
             )}
             <button onClick={startReplying}>
-              <MessageSquare size={16} /> Reply
+              Reply
             </button>
           </div>
           {isReplying && (
@@ -305,10 +305,10 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
               />
               <div className={styles['reply-actions']}>
                 <button onClick={addReply}>
-                  <Save size={16} /> Submit Reply
+                  Submit Reply
                 </button>
                 <button onClick={cancelReply}>
-                  <Cancel size={16} /> Cancel
+                  Cancel
                 </button>
               </div>
             </div>
