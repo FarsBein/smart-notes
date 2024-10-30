@@ -11,16 +11,16 @@ interface HighlightPickerProps {
     options?: HighlightOption[];
     selectedHighlight: string;
     setSelectedHighlight: (option: string) => void;
+    color?: string;
 }
 
-const highlightOptions = [
-    { name: 'None', color: '#3d3d3d' },
-    { name: 'Highlight', color: '#FFC300' },
-    { name: 'Idea', color: '#DAF7A6' },
-    { name: 'Todo', color: '#FF5733' },
-];
+export const highlightOptions = {
+    'None': '#3d3d3d',
+    'Highlight': '#FFC300',
+    'Idea': '#2C528C',
+    'Todo': '#FF5733',
+};
 
-// TODO make the selected highlight color accessible by the caller so to update the legend line color
 export const HighlightPicker: React.FC<HighlightPickerProps> = ({
     options = highlightOptions,
     selectedHighlight,
@@ -30,7 +30,7 @@ export const HighlightPicker: React.FC<HighlightPickerProps> = ({
     const [selectedColor, setSelectedColor] = useState<string>();
 
     useEffect(() => {
-        setSelectedColor(options.find(option => option.name === selectedHighlight)?.color);
+        setSelectedColor(options[selectedHighlight as keyof typeof options]);
     }, [selectedHighlight]);
 
     return (
@@ -50,18 +50,18 @@ export const HighlightPicker: React.FC<HighlightPickerProps> = ({
                     collisionPadding={10}
                     avoidCollisions={true}
                 >
-                    {options.map((option) => (
+                    {Object.entries(options).map(([key, value]) => (
                         <DropdownMenu.Item
-                            key={option.name}
+                            key={key}
                             className={styles.dropdownItem}
-                            onSelect={() => setSelectedHighlight(option.name)}
+                            onSelect={() => setSelectedHighlight(key)}
                         >
                             <div className={styles.colorOption}>
                                 <div
                                     className={styles.colorCircle}
-                                    style={{ backgroundColor: option.color }}
+                                    style={{ backgroundColor: value }}
                                 />
-                                <span>{option.name}</span>
+                                <span>{key}</span>
                             </div>
                         </DropdownMenu.Item>
                     ))}

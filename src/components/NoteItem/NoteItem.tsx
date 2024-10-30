@@ -5,7 +5,7 @@ import styles from './NoteItem.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
 import { useAttachment } from '@/hooks/UseAttachment/useAttachment';
-import { HighlightPicker } from '@/components/HighlightPicker/HighlightPicker';
+import { HighlightPicker, highlightOptions } from '@/components/HighlightPicker/HighlightPicker';
 
 interface NoteItemProps {
   fileName: string;
@@ -232,7 +232,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
             selectedHighlight={selectedHighlight}
             setSelectedHighlight={updateSelectedHighlight}
           />
-          {!isLast && <div className={styles.legendLine} />}
+          {!isLast && <div className={styles.legendLine} style={{ backgroundColor: highlightOptions[selectedHighlight as keyof typeof highlightOptions] }} />}
         </div>
         <div className={styles.content}>
           <div className={styles.contentText}>
