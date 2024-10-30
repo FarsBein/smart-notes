@@ -6,13 +6,13 @@
     --circle-size: 20px;
     --line-width: 2px;
     --spacing: 10px;
-    --line-height: calc(100% - 26px);
+    --line-height: calc(100% - 23px);
 
     font-size: 19px;
 }
 
 .legend {
-    margin-top: 4px;
+    margin-top: 5px;
     margin-left: 5px;
     margin-right: 5px;
     display: flex;
@@ -31,7 +31,7 @@
     &Line {
         width: var(--line-width);
         position: absolute;
-        top: calc(var(--circle-size) + 7px);
+        top: calc(var(--circle-size) + 4px);
         height: var(--line-height);
         background-color: var(--color-text-tertiary);
         border-radius: 10px;
