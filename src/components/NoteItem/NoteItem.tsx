@@ -262,12 +262,12 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
             <div className={styles.metadataDate}>{getRelativeTime(metadata.updatedAt)}</div>
             <div className={styles.metadataTags}>
               {metadata.tags.map((tag, i) => (
-                <>
+                <React.Fragment key={i}>
                   <Dot size={8} className={styles.metadataDot} />
                   <span onClick={() => handleTagClick(tag)} key={i}>
                     {tag}
                   </span>
-                </>
+                </React.Fragment>
               ))}
             </div>
           </div>
