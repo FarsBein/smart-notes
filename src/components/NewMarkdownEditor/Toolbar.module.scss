@@ -1,0 +1,36 @@
+@import '../../styles/themes.scss';
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.toolbarButton {
+  padding: var(--spacing-2);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-secondary);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: var(--color-background-tertiary);
+    color: var(--color-text-primary);
+  }
+
+  &.active {
+    color: var(--color-accent);
+    background-color: var(--color-background-tertiary);
+  }
+
+  svg {
+    width: var(--spacing-4);
+    height: var(--spacing-4);
+  }
+}
+
+.divider {
+  width: 1px;
+  height: var(--spacing-4);
+  background-color: var(--color-border);
+  margin: 0 var(--spacing-2);
+} 

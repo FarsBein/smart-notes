@@ -1,0 +1,41 @@
+@import '../../styles/themes.scss';
+
+.commandList {
+  background-color: var(--color-background-secondary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border);
+  padding: var(--spacing-2);
+  overflow: hidden;
+}
+
+.commandItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-4);
+  text-align: left;
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-primary);
+  transition: all 0.2s ease;
+
+  svg {
+    width: var(--spacing-4);
+    height: var(--spacing-4);
+    color: var(--color-text-secondary);
+  }
+
+  &:hover {
+    background-color: var(--color-background-tertiary);
+  }
+
+  &.selected {
+    background-color: var(--color-accent);
+    color: var(--color-text-primary);
+
+    svg {
+      color: var(--color-text-primary);
+    }
+  }
+} 

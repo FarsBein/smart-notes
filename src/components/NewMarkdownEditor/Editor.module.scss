@@ -1,0 +1,64 @@
+@import '../../styles/themes.scss';
+
+.editorWrapper {
+  min-height: 500px;
+  width: 100%;
+  max-width: 56rem;
+  margin: 0 auto;
+  background-color: var(--color-background-secondary);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-4);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-3);
+}
+
+.buttonGroup {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--color-background-tertiary);
+  color: var(--color-text-primary);
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-base);
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--color-accent);
+    color: var(--color-text-primary);
+  }
+
+  svg {
+    width: var(--spacing-4);
+    height: var(--spacing-4);
+    margin-right: var(--spacing-2);
+  }
+}
+
+.bubbleMenu {
+  background-color: var(--color-background-secondary);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-2);
+  display: flex;
+  gap: var(--spacing-1);
+}
+
+.prose {
+  margin: var(--spacing-4);
+  outline: none;
+  max-width: none;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+} 
