@@ -252,46 +252,46 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
                 <div style={{ display: 'flex', gap: 'var(--spacing-1)', justifyContent: 'space-between' }}>
                   <ReactMarkdown>{content || ''}</ReactMarkdown>
                 </div>
-
-
               </>
             )}
           </div>
           {attachmentsComponent(metadata.attachments)}
-          <div className={styles.metadata}>
-            <div className={styles.metadataDate}>{getRelativeTime(metadata.updatedAt)}</div>
-            <div className={styles.metadataTags}>
-              {metadata.tags.map((tag, i) => (
-                <React.Fragment key={i}>
-                  <Dot size={8} className={styles.metadataDot} />
-                  <span onClick={() => handleTagClick(tag)} key={i}>
-                    {tag}
-                  </span>
-                </React.Fragment>
-              ))}
+          <div className={styles.footerContainer}>
+            <div className={styles.metadata}>
+              <div className={styles.metadataTags}>
+                <div className={styles.metadataDate}>{getRelativeTime(metadata.updatedAt)}</div>
+                {metadata.tags.map((tag, i) => (
+                  <React.Fragment key={i}>
+                    <Dot size={8} className={styles.metadataDot} />
+                    <span onClick={() => handleTagClick(tag)} key={i}>
+                      {tag}
+                    </span>
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className={`${styles.actions} ${editing ? styles.editing : ''}`}>
-            <button onClick={deleteNote}>
-              Delete
-            </button>
-            {editing ? (
-              <>
-                <button onClick={saveEdit}>
-                  Save
-                </button>
-                <button onClick={() => setEditing(false)}>
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <button onClick={startEditing}>
-                Edit
+            <div className={`${styles.actions} ${editing ? styles.editing : ''}`}>
+              <button className={styles.delete} onClick={deleteNote}>
+                Delete
               </button>
-            )}
-            <button onClick={startReplying}>
-              Reply
-            </button>
+              {editing ? (
+                <>
+                  <button className={styles.save} onClick={saveEdit}>
+                    Save
+                  </button>
+                  <button className={styles.cancel} onClick={() => setEditing(false)}>
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button className={styles.edit} onClick={startEditing}>
+                  Edit
+                </button>
+              )}
+              <button className={styles.reply} onClick={startReplying}>
+                Reply
+              </button>
+            </div>
           </div>
           {isReplying && (
             <div className={styles['reply-container']}>
@@ -315,9 +315,8 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
           )}
         </div>
       </div>
-      {isLast && <div style={{ height: 'var(--spacing-4)' }}></div>}
+      <div style={{ height: 'var(--spacing-6)' }}></div>
     </>
-
   );
 });
 

@@ -47,6 +47,9 @@
     }
 
     &-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         padding: var(--spacing-2);
         margin: 0.10rem var(--spacing-1);
         border-radius: 999px;

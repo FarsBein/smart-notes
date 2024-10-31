@@ -6,7 +6,7 @@
     --circle-size: 20px;
     --line-width: 2px;
     --spacing: 10px;
-    --line-height: calc(100% - 23px);
+    --line-height: calc(100% + 4px);
 
     font-size: 19px;
 }
@@ -31,7 +31,7 @@
     &Line {
         width: var(--line-width);
         position: absolute;
-        top: calc(var(--circle-size) + 4px);
+        top: calc(var(--circle-size) + 2px);
         height: var(--line-height);
         background-color: var(--color-text-tertiary);
         border-radius: 10px;
@@ -56,10 +56,12 @@
     display: flex;
     align-items: center;
     justify-content: start;
+    flex-wrap: wrap;
     font-size: var(--font-size-sm);
     color: var(--color-text-tertiary);
     font-weight: var(--font-weight-medium);
-
+    width: 100%;
+    
     &Dot {
         margin: 0 var(--spacing-1);
         margin-top: 3px; // weirdly, the dot is not centered vertically without this
@@ -89,6 +91,11 @@
     }
 }
 
+.footerContainer {
+    display: flex;
+    justify-content: space-between;
+}
+
 .actions {
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -96,8 +103,6 @@
     display: flex;
     justify-content: flex-end;
     text-align: right;
-    border-top: 1px solid var(--color-border);
-    margin-top: var(--spacing-2);
 
     &.editing {
         opacity: 1;
@@ -108,7 +113,6 @@
         align-items: center;
         margin-right: var(--spacing-2);
         padding: var(--spacing-1) var(--spacing-2);
-        // border-radius: var(--border-radius-lg);
         background-color: transparent;
         color: var(--color-text-tertiary);
         border: none;
@@ -120,8 +124,38 @@
         }
 
         &:hover {
+            // Default hover style (optional)
             color: var(--color-text-primary);
-            // background-color: var(--color-accent);
+        }
+
+        &.delete {
+            &:hover {
+                color: red;
+            }
+        }
+
+        // &.save {
+        //     &:hover {
+        //         color: var(--color-accent);
+        //     }
+        // }
+
+        // &.edit {
+        //     &:hover {
+        //         color: var(--color-accent);
+        //     }
+        // }
+
+        &.cancel {
+            &:hover {
+                color: red;
+            }
+        }
+
+        &.reply {
+            &:hover {
+                color: var(--color-accent);
+            }
         }
     }
 }
