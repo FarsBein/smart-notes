@@ -2,7 +2,7 @@ import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Popup from './pages/PromptWindow/Index';
 import NotesFeed from './pages/NotesFeed/Index';
-import TitleBar from './components/TitleBar';
+import TitleBar from './components/TitleBar/TitleBar';
 
 const MainWindow: React.FC = () => {
   return (

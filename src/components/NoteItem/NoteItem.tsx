@@ -315,7 +315,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
           )}
         </div>
       </div>
-      {isLast && <div style={{ height: 'var(--spacing-3)' }}></div>}
+      {isLast && <div style={{ height: 'var(--spacing-4)' }}></div>}
     </>
 
   );

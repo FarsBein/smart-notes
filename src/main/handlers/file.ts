@@ -305,3 +305,6 @@ ipcMain.handle('update-highlight', async (event, fileName: string, selectedHighl
     await markdownFileHandler.updateHighlight(fileName, selectedHighlight);
 });
 
+ipcMain.handle('get-number-of-notes', async (event) => {
+    return indexFileHandler.getAllFileNames().length;
+});
