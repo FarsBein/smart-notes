@@ -44,6 +44,27 @@ export const HighlightPicker: React.FC<HighlightPickerProps> = ({
         setSelectedColor(options[selectedHighlight as keyof typeof options]);
     }, [selectedHighlight]);
 
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const floating = refs.floating.current;
+            const reference = refs.reference.current;
+            
+            if (!floating || !reference) return;
+            
+            if (!floating.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen, refs.floating, refs.reference]);
+
     return (
         <div className={styles.highlightPickerWrapper}>
             <button 
