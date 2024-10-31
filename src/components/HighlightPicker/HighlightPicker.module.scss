@@ -4,7 +4,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  -webkit-app-region: no-drag; 
+  -webkit-app-region: no-drag;
+  position: relative;
 }
 
 .highlightButton {
@@ -29,6 +30,10 @@
 }
 
 .dropdownContent {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 5px;
   min-width: 150px;
   background-color: var(--color-background-primary);
   border-radius: var(--border-radius-md);
@@ -39,6 +44,10 @@
 }
 
 .dropdownItem {
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
   font-size: 13px;
   line-height: 1;
   color: var(--color-text-primary);

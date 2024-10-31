@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import styles from './HighlightPicker.module.scss';
+import { useFloating, offset, flip, shift } from '@floating-ui/react';
 
 export interface HighlightOption {
     name: string;
@@ -28,6 +28,17 @@ export const HighlightPicker: React.FC<HighlightPickerProps> = ({
 }) => {
 
     const [selectedColor, setSelectedColor] = useState<string>();
+    const [isOpen, setIsOpen] = useState(false);
+
+    const { refs, floatingStyles } = useFloating({
+        open: isOpen,
+        placement: 'bottom-end',
+        middleware: [
+            offset(5), // 5px gap between button and dropdown
+            flip(), // flips to top if no space below
+            shift(), // shifts horizontally if needed
+        ],
+    });
 
     useEffect(() => {
         setSelectedColor(options[selectedHighlight as keyof typeof options]);
@@ -35,26 +46,31 @@ export const HighlightPicker: React.FC<HighlightPickerProps> = ({
 
     return (
         <div className={styles.highlightPickerWrapper}>
-            <DropdownMenu.Root>
-                <DropdownMenu.Trigger className={styles.highlightButton}>
-                    <div
-                        className={styles.highlightColor}
-                        style={{ backgroundColor: selectedColor }}
-                    />
-                </DropdownMenu.Trigger>
+            <button 
+                ref={refs.setReference}
+                className={styles.highlightButton}
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                <div
+                    className={styles.highlightColor}
+                    style={{ backgroundColor: selectedColor }}
+                />
+            </button>
 
-                <DropdownMenu.Content
+            {isOpen && (
+                <div
+                    ref={refs.setFloating}
                     className={styles.dropdownContent}
-                    sideOffset={5}
-                    align="end"
-                    collisionPadding={10}
-                    avoidCollisions={true}
+                    style={floatingStyles}
                 >
                     {Object.entries(options).map(([key, value]) => (
-                        <DropdownMenu.Item
+                        <button
                             key={key}
                             className={styles.dropdownItem}
-                            onSelect={() => setSelectedHighlight(key)}
+                            onClick={() => {
+                                setSelectedHighlight(key);
+                                setIsOpen(false);
+                            }}
                         >
                             <div className={styles.colorOption}>
                                 <div
@@ -63,10 +79,10 @@ export const HighlightPicker: React.FC<HighlightPickerProps> = ({
                                 />
                                 <span>{key}</span>
                             </div>
-                        </DropdownMenu.Item>
+                        </button>
                     ))}
-                </DropdownMenu.Content>
-            </DropdownMenu.Root>
+                </div>
+            )}
         </div>
     );
 };
