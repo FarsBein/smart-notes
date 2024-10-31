@@ -1,13 +1,5 @@
 .container {
-
     margin: var(--spacing-2) 0;
-
-
-    img {
-        max-width: 100%;
-        height: 100%;
-        border-radius: var(--border-radius-lg);
-    }
 
     blockquote {
         background-color: var(--color-background-primary);
@@ -15,5 +7,13 @@
         margin: var(--spacing-3) 0;
         padding: var(--spacing-3);
         color: var(--color-text-secondary);
+    }
+}
+
+.note-attachment{
+    &-image{
+        max-width: 100%;
+        height: 100%;
+        border-radius: var(--border-radius-lg);
     }
 }

@@ -1,3 +1,4 @@
+import { ImageViewer } from '@/components/ImageViewer/ImageViewer';
 import styles from './attachments.module.scss';
 
 export const useAttachment = () => {
@@ -12,14 +13,10 @@ export const useAttachment = () => {
                     parsedAttachment.endsWith('.jpeg'))
             ) {
                 return (
-                    <img
+                    <ImageViewer
                         key={index}
                         src={`safe-file://${parsedAttachment}`}
                         alt="Attachment"
-                        onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            console.error('Failed to load image:', parsedAttachment);
-                        }}
                         className={styles['note-attachment-image']}
                     />
                 );
