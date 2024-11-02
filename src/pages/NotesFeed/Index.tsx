@@ -50,7 +50,7 @@ const NotesList: React.FC = () => {
               isLast={index === allNotesMetadata[fileName].replies.length - 1}
             />
           ))}
-          <div style={{ height: 'var(--spacing-7)' }}></div>
+          <div style={{ height: 'var(--spacing-4)' }}></div>
         </React.Fragment>
       ))}
     </>

@@ -2,13 +2,11 @@
 @import './Shared.module.scss';
 
 .editorWrapper {
-  min-height: 500px;
+  min-height: var(--spacing-10);
   width: 100%;
   max-width: 56rem;
-  margin: 0 auto;
-  background-color: var(--color-background-secondary);
+  background-color: var(--color-background-primary);
   border-radius: var(--border-radius-lg);
-  padding: var(--spacing-4);
 }
 
 .header {
@@ -61,4 +59,12 @@
   padding: 2px 4px;
   color: #3b82f6;
   font-weight: 500;
+}
+
+.isEmpty:first-child::before {
+  color: var(--color-text-tertiary);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
 } 

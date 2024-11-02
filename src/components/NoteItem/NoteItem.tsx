@@ -2,10 +2,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Dot } from 'lucide-react';
 import styles from './NoteItem.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
-import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
 import { useAttachment } from '@/hooks/UseAttachment/useAttachment';
 import { HighlightPicker, highlightOptions } from '@/components/HighlightPicker/HighlightPicker';
+
 import MarkdownViewer from '../NewMarkdownEditor/Viewer/MarkdownViewer';
+import { Editor, EditorRef } from '../../components/NewMarkdownEditor/Editor';
+import { useRef } from 'react';
 
 interface NoteItemProps {
   fileName: string;
@@ -28,18 +30,48 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
   const [content, setContent] = useState<string>(fileContent);
   const [metadata, setMetadata] = useState<NoteMetadata>(fileMetadata);
   const [editing, setEditing] = useState<boolean>(false);
-  const [editContent, setEditContent] = useState<string>(content);
+  // const [editContent, setEditContent] = useState<string>(content);
   const [editTags, setEditTags] = useState<string>(metadata.tags.join(' ') + ' ');
   const [replyTags, setReplyTags] = useState<string>('');
+  // const [replyContent, setReplyContent] = useState<string>('');
   const [isReplying, setIsReplying] = useState<boolean>(false);
-  const [replyContent, setReplyContent] = useState<string>('');
   const [selectedHighlight, setSelectedHighlight] = useState<string>('None');
+
+  const editorRef = useRef<EditorRef>(null);
+  const replyEditorRef = useRef<EditorRef>(null);
 
   useEffect(() => {
     if (metadata.highlight) {
       setSelectedHighlight(metadata.highlight);
     }
   }, [metadata.highlight]);
+
+  // TODO duplicate code
+  const getMarkdownFromEditor = async () => {
+    try {
+      if (editorRef.current) {
+        const markdown = editorRef.current.getMarkdown();
+        console.log('markdown:', markdown);
+        return markdown;
+      }
+    } catch (error) {
+      console.error('Failed to get markdown from editor:', error);
+      return '';
+    }
+  };
+
+  const getMarkdownFromReplyEditor = async () => {
+    try {
+      if (replyEditorRef.current) {
+        const markdown = replyEditorRef.current.getMarkdown();
+        console.log('markdown:', markdown);
+        return markdown;
+      }
+    } catch (error) {
+      console.error('Failed to get markdown from editor:', error);
+      return '';
+    }
+  };
 
   const handleTagInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -108,12 +140,13 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
 
   const startEditing = () => {
     setEditing(true);
-    setEditContent(content);
     setEditTags(metadata.tags.join(' ') + ' ');
+    editorRef.current?.focus();
   };
 
   const saveEdit = async () => {
     try {
+      const editContent = await getMarkdownFromEditor();
       const newTags = editTags.trim().split(/\s+/).filter(tag => tag.startsWith('#'));
       await window.electron.ipcRenderer.invoke('update-note', fileName, editContent, newTags);
       setContent(editContent);
@@ -168,16 +201,20 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
 
   const startReplying = () => {
     setIsReplying(true);
+    // Add a small delay to ensure the reply container is rendered before ref is available
+    setTimeout(() => {
+      replyEditorRef.current?.focus();
+    }, 100);
   };
 
   const cancelReply = () => {
     setIsReplying(false);
-    setReplyContent('');
   };
 
   const addReply = async () => {
     try {
       // TODO UPDATE Meta data using result.metadata
+      const replyContent = await getMarkdownFromReplyEditor();
       const tags = replyTags.trim().split(/\s+/).filter(tag => tag.startsWith('#'));
       const parentFileName = metadata.isReply ? metadata.parentFileName : fileName;
       const result = await window.electron.ipcRenderer.invoke('save-reply', replyContent, [], parentFileName, tags, selectedHighlight);
@@ -208,7 +245,6 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
       }));
 
       setIsReplying(false);
-      setReplyContent('');
       setReplyTags('');
     } catch (error) {
       console.error('Failed to create reply:', error);
@@ -232,13 +268,13 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
             selectedHighlight={selectedHighlight}
             setSelectedHighlight={updateSelectedHighlight}
           />
-          {!isLast && <div className={styles.legendLine} style={{ backgroundColor: highlightOptions[selectedHighlight as keyof typeof highlightOptions] }} />}
+          {(!isLast || isReplying) && <div className={styles.legendLine} style={{ backgroundColor: highlightOptions[selectedHighlight as keyof typeof highlightOptions] }} />}
         </div>
         <div className={styles.content}>
           <div className={styles.contentText}>
             {editing ? (
               <>
-                <MarkdownEditor content={editContent} setContent={setEditContent} />
+                <Editor content={content} ref={editorRef} />
                 <input
                   type="text"
                   value={editTags}
@@ -271,51 +307,68 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
               </div>
             </div>
             <div className={`${styles.actions} ${editing ? styles.editing : ''}`}>
-              <button className={styles.delete} onClick={deleteNote}>
+              <button className={styles.actionsDelete} onClick={deleteNote}>
                 Delete
               </button>
               {editing ? (
                 <>
-                  <button className={styles.save} onClick={saveEdit}>
+                  <button className={styles.actionsSave} onClick={saveEdit}>
                     Save
                   </button>
-                  <button className={styles.cancel} onClick={() => setEditing(false)}>
+                  <button className={styles.actionsCancel} onClick={() => setEditing(false)}>
                     Cancel
                   </button>
                 </>
               ) : (
-                <button className={styles.edit} onClick={startEditing}>
+                <button className={styles.actionsEdit} onClick={startEditing}>
                   Edit
                 </button>
               )}
-              <button className={styles.reply} onClick={startReplying}>
+              <button className={styles.actionsReply} onClick={startReplying}>
                 Reply
               </button>
             </div>
           </div>
-          {isReplying && (
-            <div className={styles['reply-container']}>
-              <MarkdownEditor content={replyContent} setContent={setReplyContent} />
+
+        </div>
+      </div>
+      <div style={{ height: 'var(--spacing-4)' }}></div>
+      {isReplying && (
+        <div className={styles.container}>
+
+          <div className={styles.legend}>
+            <HighlightPicker
+              selectedHighlight={selectedHighlight}
+              setSelectedHighlight={updateSelectedHighlight}
+            />
+            {!isLast && <div className={styles.legendLine} style={{ backgroundColor: highlightOptions[selectedHighlight as keyof typeof highlightOptions] }} />}
+          </div>
+
+          <div className={styles.content}>
+            <div className={styles.contentText}>
+              <Editor ref={replyEditorRef} />
               <input
                 type="text"
                 value={replyTags}
                 onChange={handleReplyTagInputChange}
                 placeholder="Enter tags..."
-                className={styles['tag-input']}
+                className={styles.tagInput}
               />
-              <div className={styles['reply-actions']}>
-                <button onClick={addReply}>
-                  Submit Reply
-                </button>
-                <button onClick={cancelReply}>
-                  Cancel
-                </button>
-              </div>
             </div>
-          )}
+
+            <div className={styles.actions}>
+              <button onClick={addReply} className={styles.actionsSave}>
+                Submit Reply
+              </button>
+              <button onClick={cancelReply} className={styles.actionsCancel}>
+                Cancel
+              </button>
+            </div>
+          </div>
+
         </div>
-      </div>
-      <div style={{ height: 'var(--spacing-6)' }}></div>
+      )}
+      <div style={{ height: 'var(--spacing-4)' }}></div>
     </>
   );
 });

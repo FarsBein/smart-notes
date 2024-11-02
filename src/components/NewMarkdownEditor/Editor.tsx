@@ -10,11 +10,12 @@ import { parseMarkdown } from './utils/markdownInput'
 import { Tag, SlashCommands } from './extensions'
 
 interface EditorProps {
-  content: string;
+  content?: string;
 }
 
 export interface EditorRef {
   getMarkdown: () => string;
+  focus: () => void;
 }
 
 export const Editor = forwardRef<EditorRef, EditorProps>(({ content }, ref) => {
@@ -23,12 +24,14 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ content }, ref) => {
       StarterKit,
       Placeholder.configure({
         placeholder: 'Type "/" for commands...',
+        showOnlyWhenEditable: true,
+        emptyEditorClass: styles.isEmpty,
       }),
       Typography,
       SlashCommands,
       Tag,
     ],
-    content: parseMarkdown(content),
+    content: content ? parseMarkdown(content) : '',
     editorProps: {
       attributes: {
         class: styles.prose,
@@ -43,6 +46,14 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ content }, ref) => {
         return generateMarkdown(html);
       }
       return '';
+    },
+    focus: () => {
+      if (editor) {
+        // Add a small delay to ensure the editor is mounted
+        setTimeout(() => {
+          editor.commands.focus('end'); 
+        }, 0);
+      }
     },
   }));
 
