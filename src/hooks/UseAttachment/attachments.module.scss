@@ -1,12 +1,22 @@
 .container {
     margin: var(--spacing-2) 0;
-
+    
     blockquote {
         background-color: var(--color-background-primary);
         border-left: 4px solid var(--color-border);
         margin: var(--spacing-3) 0;
         padding: var(--spacing-3);
         color: var(--color-text-secondary);
+    
+        /* Ensure blockquote takes full width of its container */
+        width: 100%;
+        box-sizing: border-box;
+    
+        /* Add word wrapping properties */
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        white-space: pre-wrap; 
     }
 }
 
