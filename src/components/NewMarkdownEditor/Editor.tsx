@@ -2,12 +2,12 @@ import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Typography from '@tiptap/extension-typography'
-import { SlashCommands } from './SlashCommand'
-import Toolbar from './Toolbar'
+import Toolbar from './Toolbar/Toolbar'
 import styles from './Editor.module.scss'
 import { forwardRef, useImperativeHandle } from 'react'
-import { generateMarkdown } from './markdownOutput'
-import { parseMarkdown } from './markdownInput'
+import { generateMarkdown } from './utils/markdownOutput'
+import { parseMarkdown } from './utils/markdownInput'
+import { Tag, SlashCommands } from './extensions'
 
 interface EditorProps {
   content: string;
@@ -26,6 +26,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ content }, ref) => {
       }),
       Typography,
       SlashCommands,
+      Tag,
     ],
     content: parseMarkdown(content),
     editorProps: {

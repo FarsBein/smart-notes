@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
 import { Dot } from 'lucide-react';
 import styles from './NoteItem.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor';
 import { useAttachment } from '@/hooks/UseAttachment/useAttachment';
 import { HighlightPicker, highlightOptions } from '@/components/HighlightPicker/HighlightPicker';
+import MarkdownViewer from '../NewMarkdownEditor/Viewer/MarkdownViewer';
 
 interface NoteItemProps {
   fileName: string;
@@ -250,7 +250,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
             ) : (
               <>
                 <div style={{ display: 'flex', gap: 'var(--spacing-1)', justifyContent: 'space-between' }}>
-                  <ReactMarkdown>{content || ''}</ReactMarkdown>
+                  <MarkdownViewer content={content || ''} />
                 </div>
               </>
             )}
