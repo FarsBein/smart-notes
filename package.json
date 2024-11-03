@@ -59,6 +59,7 @@
     "@tiptap/starter-kit": "^2.9.1",
     "@tiptap/suggestion": "^2.9.1",
     "@types/react-router-dom": "^5.3.3",
+    "@types/ws": "^8.5.13",
     "dotenv": "^16.4.5",
     "electron-context-menu": "^4.0.4",
     "electron-squirrel-startup": "^1.0.1",
@@ -68,6 +69,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
-    "tippy.js": "^6.3.7"
+    "tippy.js": "^6.3.7",
+    "ws": "^8.18.0"
   }
 }

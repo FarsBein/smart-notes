@@ -280,7 +280,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
                   value={editTags}
                   onChange={handleTagInputChange}
                   placeholder="Enter tags..."
-                  className={styles['tag-input']}
+                  className={styles.tagInput}
                 />
               </>
             ) : (

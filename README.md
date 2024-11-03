@@ -8,3 +8,15 @@ with some modifications:
 - added App.tsx and Application.tsx to handle routing
 
 
+### chrome extension for capturing page info
+---
+
+To use the chrome extension:
+1. run current project
+2. go to chrome://extensions/
+3. enable "Developer mode"
+4. click "Load unpacked" and select the chromeExtension directory "chromeExtension"
+
+that is all actions like get url, get selection, get page info are handled by the extension
+
+
