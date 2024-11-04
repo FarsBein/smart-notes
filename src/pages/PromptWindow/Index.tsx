@@ -41,8 +41,9 @@ const PopupContent: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log('note updated:', note);
-    handleSave();
+    if (note) {
+      handleSave();
+    }
   }, [note]);
 
   return (
