@@ -213,10 +213,9 @@ const getSuggestionItems = (props: any) => [
     command: async ({ editor, range }: any) => {
       editor.chain().focus().deleteRange(range).run()
       const link = await getLinkAndSelectionFromWebpage()
-      console.log('link:', link)
-      console.log('link:', link.url)
+
       const type = 'text/plain';
-      const item: CustomClipboardItem = {
+      const urlItem: CustomClipboardItem = {
         type,
         kind: 'string',
         getAsFile: () => null,
@@ -225,9 +224,18 @@ const getSuggestionItems = (props: any) => [
         },
       };
 
+      const textItem: CustomClipboardItem = {
+        type,
+        kind: 'string',
+        getAsFile: () => null,
+        getAsString: (callback: (str: string) => void) => {
+          callback(link.selectedText);
+        },
+      };
+
       const customDataTransfer: CustomDataTransferList = {
-        length: 1,
-        item: (i: number) => item,
+        length: 2,
+        item: (i: number) => i === 0 ? urlItem : textItem,
         [Symbol.iterator]: function* () {
           for (let i = 0; i < this.length; i++) {
             yield this.item(i);

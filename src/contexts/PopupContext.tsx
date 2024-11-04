@@ -14,7 +14,6 @@ interface PopupContextType {
   isSaving: boolean;
   isValidUrl: (string: string) => boolean;
   handleImageFile: (file: File) => void;
-  addAttachment: (type: Attachment['type'], content: string) => void;
   handleClipboard: (items: DataTransferItemList) => void;
   thread: {fileName: string, metadata: NoteMetadata, content: string}[];
   setThread: React.Dispatch<React.SetStateAction<{fileName: string, metadata: NoteMetadata, content: string}[]>>;
@@ -76,35 +75,28 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const handleImageFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = (event) => {
-      addAttachment('image', event.target?.result as string);
+      setAttachments([...attachments, { type: 'image', content: event.target?.result as string }]);
     };
     reader.readAsDataURL(file);
   };
 
   const handleClipboard = (items: DataTransferItemList) => {
-    console.log('Clipboard items:', items);
     Array.from(items).forEach((item) => {
-      console.log('Processing item:', item.type);
       if (item.type.startsWith('image/')) {
         const file = item.getAsFile();
         if (file) handleImageFile(file);
       } else if (item.type === 'text/plain') {
         item.getAsString((string) => {
-          console.log('Clipboard string:', string);
           if (isValidUrl(string)) {
-            addAttachment('url', string);
+            setAttachments(prev => [...prev, { type: 'url', content: string }]);
+          } else {
+            setAttachments(prev => [...prev, { type: 'text', content: string }]);
           }
         });
       }
     });
   };
 
-  const addAttachment = (type: Attachment['type'], content: string) => {
-    const newAttachment: Attachment = { type, content };
-    setAttachments([...attachments, newAttachment]);
-  };
-
-  
   const handleSave = async () => {
     if (note.trim().length > 0) {
       const tagInputTrimmed = tagInput?.trim();
@@ -179,7 +171,6 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       isSaving,
       isValidUrl,
       handleImageFile,
-      addAttachment,
       handleClipboard,
       thread,
       setThread,
