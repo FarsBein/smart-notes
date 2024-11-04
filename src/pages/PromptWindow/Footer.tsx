@@ -4,8 +4,12 @@ import SearchDropdown from './SearchDropdown';
 import { usePopupContext } from '../../contexts/PopupContext';
 import styles from './PromptWindow.module.scss';
 
-const Footer: React.FC = () => {
-  const { handleSave, handleCancel, setAttachments, attachments, saveStatus, handleThread, tagInput, setTagInput } = usePopupContext();
+interface FooterProps {
+  handleEditorSave: () => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ handleEditorSave }) => {
+  const {  handleCancel, setAttachments, attachments, saveStatus, handleThread, tagInput, setTagInput } = usePopupContext();
   
  
   const handleTagInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -27,7 +31,7 @@ const Footer: React.FC = () => {
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSave();
+      handleEditorSave();
     } else if (e.key === 'Backspace' && e.shiftKey) {
       e.preventDefault();
       setAttachments([]);
@@ -115,7 +119,7 @@ const Footer: React.FC = () => {
           </button>
         </div>
         <button className={styles['popup__post-btn']} onClick={handleCancel}>Cancel</button>
-        <button className={styles['popup__post-btn']} onClick={handleSave} disabled={!!saveStatus}>{saveStatus || 'Save'}</button>
+        <button className={styles['popup__post-btn']} onClick={handleEditorSave} disabled={!!saveStatus}>{saveStatus || 'Save'}</button>
       </div>
     </div>
   );

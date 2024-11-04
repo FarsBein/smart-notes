@@ -1,16 +1,16 @@
-import React, { DragEvent, useState } from 'react';
+import React, { DragEvent, useRef, useState, useEffect } from 'react';
 
 import { PopupProvider, usePopupContext } from '../../contexts/PopupContext';
 import Header from './Header';
-import TextArea from './TextArea';
 import AttachmentList from './AttachmentList';
 import Footer from './Footer';
 import { Check, Loader2 } from 'lucide-react';
 import styles from './PromptWindow.module.scss';
 import NoteItem from '../../components/NoteItem/NoteItem';
+import { Editor, EditorRef } from '@/components/PopupEditor/Editor';
 
 const PopupContent: React.FC = () => {
-  const { attachments, setAttachments, isSaving, saveStatus, handleClipboard, thread } = usePopupContext();
+  const { attachments, setAttachments, isSaving, saveStatus, handleClipboard, thread, note, setNote, handleSave } = usePopupContext();
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -23,6 +23,27 @@ const PopupContent: React.FC = () => {
     e.preventDefault();
   };
 
+  const editorRef = useRef<EditorRef>(null);
+
+  const handleClearAttachments = () => {
+    setAttachments([]);
+  };
+
+  const handleClose = () => {
+    window.electron.ipcRenderer.send('close-popup');
+  };
+
+  const handleEditorSave = () => {
+    const markdown = editorRef.current?.getMarkdown();
+    if (markdown) {
+      setNote(markdown);
+    }
+  };
+
+  useEffect(() => {
+    console.log('note updated:', note);
+    handleSave();
+  }, [note]);
 
   return (
     isSaving ?
@@ -50,9 +71,18 @@ const PopupContent: React.FC = () => {
             {thread.length > 0 && <div style={{ marginTop: 'var(--spacing-5)' }}></div>}
           </div>
           <div className={styles['popup__editor']}>
-            <TextArea />
+            <Editor
+              ref={editorRef}
+              content={note}
+              onSave={handleEditorSave}
+              onClearAttachments={handleClearAttachments}
+              onClose={handleClose}
+              onClipboard={handleClipboard}
+              placeholder="Capture your thoughts here…"
+              autoFocus={true}
+            />
             <AttachmentList attachments={attachments} setAttachments={setAttachments} />
-            <Footer />
+            <Footer handleEditorSave={handleEditorSave} />
           </div>
         </div>
   );
