@@ -1,11 +1,12 @@
 import { Editor, Extension } from '@tiptap/core'
 import Suggestion from '@tiptap/suggestion'
 import tippy from 'tippy.js'
-import { Heading1, Heading2, List, ListOrdered, Quote, Code, Save, X, Paperclip, Clipboard } from 'lucide-react'
+import { Heading1, Heading2, List, ListOrdered, Quote, Code, Save, X, Paperclip, Clipboard, Link } from 'lucide-react'
 import React from 'react'
 import { ReactRenderer } from '@tiptap/react'
 import styles from './CommandList.module.scss'
 import { EditorProps } from '../../Editor'
+import { getLinkAndSelectionFromWebpage } from './helperFunctions'
 
 interface SuggestionItem {
   title: string,
@@ -19,13 +20,26 @@ interface CommandListProps {
   query?: string
 }
 
+interface CustomClipboardItem {
+  type: string;
+  kind: 'string';
+  getAsFile: () => File | null;
+  getAsString: (callback: (str: string) => void) => void;
+}
+
+interface CustomDataTransferList {
+  length: number;
+  item: (index: number) => CustomClipboardItem;
+  [Symbol.iterator]: () => Generator<CustomClipboardItem>;
+}
+
 const CommandList = React.forwardRef((props: CommandListProps, ref: any) => {
   const [selectedIndex, setSelectedIndex] = React.useState(0)
   const { items, command, query } = props
 
   const filteredItems = React.useMemo(() => {
     if (!query) return items
-    return items.filter(item => 
+    return items.filter(item =>
       item.title.toLowerCase().includes(query.toLowerCase())
     )
   }, [items, query])
@@ -70,9 +84,8 @@ const CommandList = React.forwardRef((props: CommandListProps, ref: any) => {
       {filteredItems.map((item, index) => (
         <button
           key={index}
-          className={`${styles.commandItem} ${
-            index === selectedIndex ? styles.selected : ''
-          }`}
+          className={`${styles.commandItem} ${index === selectedIndex ? styles.selected : ''
+            }`}
           onClick={() => selectItem(index)}
         >
           {item.icon}
@@ -194,20 +207,40 @@ const getSuggestionItems = (props: any) => [
         });
     },
   },
+  {
+    title: 'Link and Selection from Webpage',
+    icon: <Link className="w-4 h-4" />,
+    command: async ({ editor, range }: any) => {
+      editor.chain().focus().deleteRange(range).run()
+      const link = await getLinkAndSelectionFromWebpage()
+      console.log('link:', link)
+      console.log('link:', link.url)
+      const type = 'text/plain';
+      const item: CustomClipboardItem = {
+        type,
+        kind: 'string',
+        getAsFile: () => null,
+        getAsString: (callback: (str: string) => void) => {
+          callback(link.url);
+        },
+      };
+
+      const customDataTransfer: CustomDataTransferList = {
+        length: 1,
+        item: (i: number) => item,
+        [Symbol.iterator]: function* () {
+          for (let i = 0; i < this.length; i++) {
+            yield this.item(i);
+          }
+        },
+      };
+
+      props.onClipboard?.(customDataTransfer as unknown as DataTransferItemList);
+    },
+  },
 ]
 
-interface CustomClipboardItem {
-  type: string;
-  kind: 'string';
-  getAsFile: () => File | null;
-  getAsString: (callback: (str: string) => void) => void;
-}
 
-interface CustomDataTransferList {
-  length: number;
-  item: (index: number) => CustomClipboardItem;
-  [Symbol.iterator]: () => Generator<CustomClipboardItem>;
-}
 
 export const SlashCommands = Extension.create({
   name: 'slash-commands',
@@ -264,7 +297,7 @@ export const SlashCommands = Extension.create({
           }
         },
       },
-      onSave: undefined as EditorProps['onSave'], 
+      onSave: undefined as EditorProps['onSave'],
       onClearAttachments: undefined as EditorProps['onClearAttachments'],
       onClose: undefined as EditorProps['onClose'],
       onClipboard: undefined as EditorProps['onClipboard'],

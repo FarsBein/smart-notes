@@ -14,9 +14,9 @@ const AttachmentList: React.FC<AttachmentListProps> = ({ attachments, setAttachm
   return (
     <div className={styles['attachments']}>
       {attachments.map((attachment, index) => (
-        <>
+        <React.Fragment key={index}>
           {attachment.type === 'image' && (
-            <div key={index} className={styles['attachment']}>
+            <div className={styles['attachment']}>
               <div className={styles['image-attachment']}>
                 <img src={attachment.content} alt="Uploaded content" style={{ maxWidth: '200px' }} />
                 <Trash className={styles['delete-btn']} onClick={() => handleDelete(index)} />
@@ -24,7 +24,7 @@ const AttachmentList: React.FC<AttachmentListProps> = ({ attachments, setAttachm
             </div>
           )}
           {attachment.type === 'code' && (
-            <div key={index} className={styles['attachment']}>
+            <div className={styles['attachment']}>
               <div className={styles['code-attachment']}>
                 <pre className={styles['code-snippet']}>{attachment.content}</pre>
                 <X className={styles['delete-btn']} onClick={() => handleDelete(index)} />
@@ -32,7 +32,7 @@ const AttachmentList: React.FC<AttachmentListProps> = ({ attachments, setAttachm
             </div>
           )}
           {attachment.type === 'quote' && (
-            <div key={index} className={styles['attachment']}>
+            <div className={styles['attachment']}>
               <div className={styles['quote-attachment']}>
                 <blockquote>{attachment.content}</blockquote>
                 <X className={styles['delete-btn']} onClick={() => handleDelete(index)} />
@@ -40,7 +40,7 @@ const AttachmentList: React.FC<AttachmentListProps> = ({ attachments, setAttachm
             </div>
           )}
           {attachment.type === 'url' && (
-            <div key={index} className={styles['attachment']}>
+            <div className={styles['attachment']}>
                 <div className={styles['url-attachment']}>
                 <Link size={16} />
                 <div>{attachment.content}</div>
@@ -48,7 +48,7 @@ const AttachmentList: React.FC<AttachmentListProps> = ({ attachments, setAttachm
               </div>
             </div>
           )}
-        </>
+        </React.Fragment>
       ))}
     </div>
   );
