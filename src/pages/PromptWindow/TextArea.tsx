@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { usePopupContext } from '../../contexts/PopupContext';
-import MarkdownEditor from '../../components/MarkdownEditor/MarkdownEditor';
+import { Editor, EditorRef } from '../../components/PopupEditor/Editor';
 import styles from './PromptWindow.module.scss';
 
 const TextArea: React.FC = () => {
   const { note, setNote, handleSave, setAttachments, handleClipboard } = usePopupContext();
+  const editorRef = useRef<EditorRef>(null);
 
   const handleClearAttachments = () => {
     setAttachments([]);
@@ -14,15 +15,23 @@ const TextArea: React.FC = () => {
     window.electron.ipcRenderer.send('close-popup');
   };
 
+  const handleEditorSave = () => {
+    if (editorRef.current) {
+      const markdown = editorRef.current.getMarkdown();
+      setNote(markdown);
+      handleSave();
+    }
+  };
+
   return (
     <div className={styles['popup__content']}>
-      <MarkdownEditor
+      <Editor
+        ref={editorRef}
         content={note}
-        setContent={setNote}
-        onSave={handleSave}
+        onSave={handleEditorSave}
         onClearAttachments={handleClearAttachments}
         onClose={handleClose}
-        handleClipboard={handleClipboard}
+        onClipboard={handleClipboard}
         placeholder="Capture your thoughts here…"
         autoFocus={true}
       />

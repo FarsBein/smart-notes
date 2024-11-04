@@ -82,20 +82,22 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const handleClipboard = (items: DataTransferItemList) => {
-    for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.type.indexOf('image') !== -1) {
-          const file = item.getAsFile();
-          if (file) handleImageFile(file);
-        } else if (item.type === 'text/plain') {
-          item.getAsString((string) => {
-            if (isValidUrl(string)) {
-              addAttachment('url', string);
-            }
-          });
-        }
+    console.log('Clipboard items:', items);
+    Array.from(items).forEach((item) => {
+      console.log('Processing item:', item.type);
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) handleImageFile(file);
+      } else if (item.type === 'text/plain') {
+        item.getAsString((string) => {
+          console.log('Clipboard string:', string);
+          if (isValidUrl(string)) {
+            addAttachment('url', string);
+          }
+        });
       }
-  } 
+    });
+  };
 
   const addAttachment = (type: Attachment['type'], content: string) => {
     const newAttachment: Attachment = { type, content };
