@@ -53,16 +53,6 @@ const TitleBar: React.FC = () => {
       </div>
 
       <div className={styles.titleBarActions}>
-
-        <div className={styles.titleBarIcons}>
-          <button>
-            <Folder size={20} />
-          </button>
-          <button onClick={() => setIsSearchOpen(prev => !prev)}>
-            <Search size={20} />
-          </button>
-        </div>
-
         <div className={styles.titleBarWindowControls}>
           <button onClick={handleMinimize}><Minus size={17} /></button>
           <button onClick={handleMaximize}><Square size={15} /></button>

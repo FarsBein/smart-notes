@@ -1,0 +1,32 @@
+.bottomBar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--color-background-secondary);
+    color: var(--color-text-primary);
+    padding: var(--spacing-3);
+    z-index: 1000;
+    border-radius: 999px;
+    margin: 10px;
+    opacity: 0.2;
+
+    &:hover {
+        opacity: 1;
+    }
+}
+
+.titleBarIcons {
+    display: flex;
+    gap: 10px;
+
+    button {
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+
+        &:hover {
+            color: var(--color-text-primary);
+        }
+    }
+}
