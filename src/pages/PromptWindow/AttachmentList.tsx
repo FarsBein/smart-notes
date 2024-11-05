@@ -31,7 +31,7 @@ const AttachmentList: React.FC<AttachmentListProps> = ({ attachments, setAttachm
               </div>
             </div>
           )}
-          {attachment.type === 'quote' && (
+          {attachment.type === 'text' && attachment.content.length > 0 && (
             <div className={styles['attachment']}>
               <div className={styles['quote-attachment']}>
                 <blockquote>{attachment.content}</blockquote>
@@ -41,9 +41,9 @@ const AttachmentList: React.FC<AttachmentListProps> = ({ attachments, setAttachm
           )}
           {attachment.type === 'url' && (
             <div className={styles['attachment']}>
-                <div className={styles['url-attachment']}>
+              <div className={styles['url-attachment']}>
                 <Link size={16} />
-                <div>{attachment.content}</div>
+                <div className={styles['url-content']}>{attachment.content}</div>
                 <X className={styles['delete-btn']} onClick={() => handleDelete(index)} />
               </div>
             </div>
