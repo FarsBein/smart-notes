@@ -7,9 +7,9 @@
     color: var(--color-text-primary);
     padding: var(--spacing-3);
     z-index: 1000;
-    border-radius: 999px;
+    border-radius: var(--border-radius-xl);
     opacity: 0.2;
-    width: 100px;
+    width: 120px;
     margin-left: auto;
 
     &:hover {
@@ -19,16 +19,16 @@
 
 .titleBarIcons {
     display: flex;
-    gap: 10px;
+    gap: 30px;
 
     button {
         background-color: transparent;
         border: none;
         cursor: pointer;
-        color: var(--color-text-primary);
+        color: var(--color-text-secondary);
 
         &:hover {
-            color: var(--color-text-secondary);
+            color: var(--color-text-primary);
         }
     }
 }
