@@ -9,10 +9,10 @@ const BottomBar: React.FC = () => {
         <div className={styles.bottomBar}>
             <div className={styles.titleBarIcons}>
                 <button>
-                    <Folder size={20} />
+                    <Folder size={20} strokeWidth={4} />
                 </button>
                 <button onClick={() => setIsSearchOpen(prev => !prev)}>
-                    <Search size={20} />
+                    <Search size={20} strokeWidth={4} />
                 </button>
             </div>
         </div>

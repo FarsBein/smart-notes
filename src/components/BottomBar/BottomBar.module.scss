@@ -1,15 +1,16 @@
 .bottomBar {
     position: fixed;
-    bottom: 0;
+    bottom: 20px;
     left: 0;
-    right: 0;
+    right: 20px;
     background-color: var(--color-background-secondary);
     color: var(--color-text-primary);
     padding: var(--spacing-3);
     z-index: 1000;
     border-radius: 999px;
-    margin: 10px;
     opacity: 0.2;
+    width: 100px;
+    margin-left: auto;
 
     &:hover {
         opacity: 1;
@@ -24,9 +25,10 @@
         background-color: transparent;
         border: none;
         cursor: pointer;
+        color: var(--color-text-primary);
 
         &:hover {
-            color: var(--color-text-primary);
+            color: var(--color-text-secondary);
         }
     }
 }
