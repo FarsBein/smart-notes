@@ -68,7 +68,7 @@ import { FileService } from '../utils/FileService';
         }
     }
 */
-interface IndexFileHandler {
+interface IndexFile {
     notes: Record<string, NoteMetadata>;
     replies: Record<string, NoteMetadata>;
     noteList: string[];
@@ -85,24 +85,46 @@ interface FolderStructure {
 
 class IndexFileHandler {
     private indexPath: string;
-    private index: IndexFileHandler;
+    private index: IndexFile;
     private fileService: FileService;
+    private initialized: boolean = false;
 
     constructor(indexPath: string) {
         this.indexPath = indexPath;
-        this.index = {} as IndexFileHandler;
         this.fileService = new FileService();
+        this.index = {
+            notes: {},
+            replies: {},
+            noteList: [],
+            folderStructure: {
+                id: ['root'],
+                name: 'Root',
+                children: []
+            },
+            folderIndex: {},
+            tagIndex: {}
+        };
 
-        this.loadIndex().then(index => this.index = index);
+        // Initialize asynchronously
+        this.initialize();
     }
 
-    private async loadIndex(): Promise<IndexFileHandler> {
+    private async initialize() {
+        if (!this.initialized) {
+            this.index = await this.loadIndex();
+            this.initialized = true;
+        }
+    }
+
+    private async loadIndex(): Promise<IndexFile> {
         try {
-            const data = await this.fileService.readJsonFile<IndexFileHandler>(this.indexPath);
+            // Try to read existing index file
+            const data = await this.fileService.readJsonFile<IndexFile>(this.indexPath);
             return data;
         } catch (error) {
-            console.error('Error loading index:', error);
-            return {
+            console.log(`No existing index file found at ${this.indexPath}, creating new one`);
+            // Create default index structure
+            const defaultIndex: IndexFile = {
                 notes: {},
                 replies: {},
                 noteList: [],
@@ -113,20 +135,47 @@ class IndexFileHandler {
                 },
                 folderIndex: {},
                 tagIndex: {}
-            } as IndexFileHandler;
+            };
+
+            // Write the default index to file
+            try {
+                await this.fileService.writeJsonFile(this.indexPath, defaultIndex);
+                return defaultIndex;
+            } catch (writeError) {
+                console.error('Error creating new index file:', writeError);
+                throw new NotesError(
+                    `Failed to create index file: ${writeError.message}`,
+                    ErrorCodes.FILE_WRITE_ERROR
+                );
+            }
         }
     }
 
+    // Add a helper method to ensure initialization before operations
+    public async ensureInitialized() {
+        if (!this.initialized) {
+            await this.initialize();
+        }
+    }
+
+    // Modify the first method that's likely to be called to ensure initialization
+    public async getParentNotesFileNames(): Promise<string[]> {
+        await this.ensureInitialized();
+        return this.index.noteList;
+    }
+
+    // Add ensureInitialized to other methods that access this.index
     public async saveIndex(): Promise<void> {
+        await this.ensureInitialized();
         try {
             await this.fileService.writeJsonFile(this.indexPath, this.index);
         } catch (error) {
             console.error('Error saving index:', error);
+            throw new NotesError(
+                `Failed to save index: ${error.message}`,
+                ErrorCodes.FILE_WRITE_ERROR
+            );
         }
-    }
-
-    public getParentNotesFileNames(): string[] {
-        return this.index.noteList;
     }
 
     public async updateTags(fileName: string, updatedTags: string[]): Promise<string | null> {

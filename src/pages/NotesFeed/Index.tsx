@@ -9,12 +9,11 @@ const NotesList: React.FC = () => {
   const { parentNotesFileNames, filteredParentNotesFileNames, allNotesContent, allNotesMetadata } = useNotes();
   const [isLoading, setIsLoading] = useState(true);
 
-  const isDataReady = () => (
-    parentNotesFileNames &&
-    parentNotesFileNames.length > 0 &&
-    Object.keys(allNotesContent).length > 0 && // TODO: handle empty allNotesContent no notes
-    Object.keys(allNotesMetadata).length > 0
-  );
+  const isDataReady = () => {
+    return parentNotesFileNames !== undefined && 
+           allNotesContent !== undefined && 
+           allNotesMetadata !== undefined;
+  };
 
   useEffect(() => {
     if (isDataReady()) {
@@ -25,37 +24,64 @@ const NotesList: React.FC = () => {
   if (isLoading) {
     return <div>Loading notes...</div>;
   }
-
   console.log('parentNotesFileNames:', parentNotesFileNames);
   console.log('allNotesContent:', allNotesContent);
+  const notesToDisplay = filteredParentNotesFileNames ?? parentNotesFileNames;
+
+  if (!notesToDisplay?.length) {
+    return (
+      <div style={{ 
+        textAlign: 'center', 
+        padding: 'var(--spacing-8)',
+        color: 'var(--color-text-secondary)'
+      }}>
+        No notes yet. Press Ctrl+Shift+N to create your first note.
+      </div>
+    );
+  }
 
   return (
     <>
-      {(filteredParentNotesFileNames ?? parentNotesFileNames).map((fileName: string) => (
-        <React.Fragment key={fileName}>
-          <NoteItem
-            key={fileName}
-            fileName={fileName}
-            fileContent={allNotesContent[fileName]}
-            fileMetadata={allNotesMetadata[fileName]}
-            isLast={allNotesMetadata[fileName]?.replies.length === 0}
-          />
-          {allNotesMetadata[fileName]?.replies.map((replyFileName: string, index: number) => (
-            allNotesContent[replyFileName] &&
+      {notesToDisplay.map((fileName: string) => {
+        // Only render if we have both content and metadata
+        if (!allNotesContent[fileName] || !allNotesMetadata[fileName]) {
+          console.warn(`Missing data for note: ${fileName}`);
+          return null;
+        }
+
+        return (
+          <React.Fragment key={fileName}>
             <NoteItem
-              key={replyFileName}
-              fileName={replyFileName}
-              fileContent={allNotesContent[replyFileName]}
-              fileMetadata={allNotesMetadata[replyFileName]}
-              isLast={index === allNotesMetadata[fileName].replies.length - 1}
+              key={fileName}
+              fileName={fileName}
+              fileContent={allNotesContent[fileName]}
+              fileMetadata={allNotesMetadata[fileName]}
+              isLast={!allNotesMetadata[fileName]?.replies?.length}
             />
-          ))}
-          <div style={{ height: 'var(--spacing-4)' }}></div>
-        </React.Fragment>
-      ))}
+            {allNotesMetadata[fileName]?.replies?.map((replyFileName: string, index: number) => {
+              // Only render replies if we have both content and metadata
+              if (!allNotesContent[replyFileName] || !allNotesMetadata[replyFileName]) {
+                console.warn(`Missing data for reply: ${replyFileName}`);
+                return null;
+              }
+
+              return (
+                <NoteItem
+                  key={replyFileName}
+                  fileName={replyFileName}
+                  fileContent={allNotesContent[replyFileName]}
+                  fileMetadata={allNotesMetadata[replyFileName]}
+                  isLast={index === allNotesMetadata[fileName].replies.length - 1}
+                />
+              );
+            })}
+            <div style={{ height: 'var(--spacing-4)' }}></div>
+          </React.Fragment>
+        );
+      })}
     </>
   );
-}
+};
 
 const NotesFeed: React.FC = () => {
   const { isSearchOpen } = useActionButtons();

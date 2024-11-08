@@ -7,16 +7,89 @@ import { NotesError } from '../utils/errors';
 import IndexFileHandler from '../services/indexFileHandler';
 import EmbeddingFileHandler from '../services/embeddingFileHandler';
 import MarkdownFileHandler from '../services/markdownFileHandler';
+import { loadConfig, saveConfig, isConfigured } from '../config';
 
-const notesPath = path.join(app.getPath('documents'), 'MyNotes');
-const attachmentsDir = path.join(notesPath, 'attachments');
+let notesPath: string;
+let attachmentsDir: string;
+let indexPath: string;
+let embeddingsPath: string;
 
-const indexPath = path.join(notesPath, 'metadata_index.json');
-const embeddingsPath = path.join(notesPath, 'embeddings.json');
+// Create handlers after initialization
+let indexFileHandler: IndexFileHandler;
+let markdownFileHandler: MarkdownFileHandler;
+let embeddingHandler: EmbeddingFileHandler;
 
-const indexFileHandler = new IndexFileHandler(indexPath);
-const markdownFileHandler = new MarkdownFileHandler(notesPath);
-const embeddingHandler = new EmbeddingFileHandler(embeddingsPath);
+async function initializePaths() {
+    try {
+        const config = await loadConfig();
+        console.log('Using notes path:', config.notesPath);
+        notesPath = config.notesPath;
+        attachmentsDir = path.join(notesPath, 'attachments');
+        indexPath = path.join(notesPath, 'metadata_index.json');
+        embeddingsPath = path.join(notesPath, 'embeddings.json');
+
+        // Create directories if they don't exist
+        await fs.mkdir(notesPath, { recursive: true });
+        await fs.mkdir(attachmentsDir, { recursive: true });
+
+        // Initialize empty JSON files if they don't exist
+        try {
+            await fs.access(indexPath);
+        } catch {
+            await fs.writeFile(indexPath, JSON.stringify([], null, 2));
+        }
+
+        try {
+            await fs.access(embeddingsPath);
+        } catch {
+            await fs.writeFile(embeddingsPath, JSON.stringify({}, null, 2));
+        }
+
+        // Initialize handlers after paths are set
+        indexFileHandler = new IndexFileHandler(indexPath);
+        markdownFileHandler = new MarkdownFileHandler(notesPath);
+        embeddingHandler = new EmbeddingFileHandler(embeddingsPath);
+    } catch (error) {
+        console.error('Failed to initialize paths:', error);
+        throw error;
+    }
+}
+
+
+// Initialize immediately
+(async () => {
+    await initializePaths();
+})();
+
+ipcMain.handle('check-is-configured', async () => {
+    return isConfigured();
+});
+
+ipcMain.handle('set-notes-directory', async (event, selectedPath: string) => {
+    try {
+        await saveConfig({ notesPath: selectedPath });
+        await initializePaths();
+        await fs.mkdir(notesPath, { recursive: true });
+        await fs.mkdir(attachmentsDir, { recursive: true });
+        return true;
+    } catch (error) {
+        console.error('Failed to set notes directory:', error);
+        throw error;
+    }
+});
+
+ipcMain.handle('set-initial-config', async (event, config: { notesPath: string, openAiKey: string }) => {
+    try {
+        await saveConfig(config);
+        await initializePaths();
+        await fs.mkdir(notesPath, { recursive: true });
+        await fs.mkdir(attachmentsDir, { recursive: true });
+        return true;
+    } catch (error) {
+        console.error('Failed to save configuration:', error);
+        throw error;
+    }
+});
 
 const timestampFileName = (currentDate: Date): string => {
     const year = String(currentDate.getFullYear()).slice(-2);
@@ -57,14 +130,30 @@ ipcMain.handle('save-note', async (event, noteContent: string, attachments: Atta
                     // TODO: find a better way to handle new line in quotes attachments 
                     return JSON.stringify(attachment.content.replace(/\n/g, ''));
                 case 'image':
-                    const imgContentBase64Data = attachment.content.replace(/^data:image\/png;base64,/, "");
+                    // Remove the data URL prefix if it exists
+                    const imgContentBase64Data = attachment.content.replace(/^data:image\/\w+;base64,/, "");
+                    
+                    // Generate a unique filename
                     const imgFileName = `image-${crypto.randomBytes(4).toString('hex')}.png`;
+                    
+                    // Construct the path relative to attachments directory
                     const imgFilePath = path.join('attachments', imgFileName);
-                    const normalizedImgPath = path.normalize(imgFilePath); // Normalize the path to remove any potential double slashes
+                    
+                    // Ensure the attachments directory exists
                     await fs.mkdir(attachmentsDir, { recursive: true });
-                    await fs.writeFile(path.join(attachmentsDir, imgFileName), Buffer.from(imgContentBase64Data, 'base64'));
-                    const markdownImgPath = normalizedImgPath.split(path.sep).join('/'); // Ensure the path uses forward slashes for Markdown compatibility
-                    return JSON.stringify(markdownImgPath);
+                    
+                    try {
+                        // Convert base64 to buffer and write file
+                        const imageBuffer = Buffer.from(imgContentBase64Data, 'base64');
+                        await fs.writeFile(path.join(attachmentsDir, imgFileName), imageBuffer);
+                        
+                        // Use forward slashes for markdown compatibility
+                        const markdownImgPath = imgFilePath.split(path.sep).join('/');
+                        return JSON.stringify(markdownImgPath);
+                    } catch (error) {
+                        console.error('Failed to save image attachment:', error);
+                        return '';
+                    }
                 default:
                     return '';
             }
@@ -306,5 +395,12 @@ ipcMain.handle('update-highlight', async (event, fileName: string, selectedHighl
 });
 
 ipcMain.handle('get-number-of-notes', async (event) => {
-    return indexFileHandler.getAllFileNames().length;
+    try {
+        await indexFileHandler.ensureInitialized();
+        const fileNames = indexFileHandler.getAllFileNames();
+        return fileNames?.length || 0;
+    } catch (error) {
+        console.error('Error getting number of notes:', error);
+        return 0;
+    }
 });

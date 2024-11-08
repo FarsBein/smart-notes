@@ -69,12 +69,16 @@ rules.push({
 export const rendererConfig: Configuration = {
   module: { rules },
   plugins,
+  externals: {
+    electron: 'commonjs2 electron'
+  },
   resolve: {
     alias: { '@': resolve(__dirname, 'src') },
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.css', '.scss', '.json'],
     fallback: {
       "fs": false,
       "path": false,
+      "electron": false
     },
   },
 };

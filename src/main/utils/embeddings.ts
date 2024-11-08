@@ -1,26 +1,34 @@
 import OpenAI from 'openai';
-import dotenv from 'dotenv';
+import { loadConfig } from '../config';
 
-dotenv.config();
+let openai: OpenAI;
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client with the API key from config
+async function initializeOpenAI() {
+    const config = await loadConfig();
+    openai = new OpenAI({
+        apiKey: config.openAiKey,
+    });
+}
 
 export async function generateEmbedding(noteContent: string): Promise<number[]> {
-  try {
-    const response = await openai.embeddings.create({
-      model: 'text-embedding-ada-002',
-      input: noteContent,
-    });
-
-    if (response.data && response.data.length > 0) {
-      return response.data[0].embedding;
-    } else {
-      throw new Error('Failed to generate embedding');
+    if (!openai) {
+        await initializeOpenAI();
     }
-  } catch (error) {
-    console.error('Error generating embedding:', error);
+
+    try {
+        const response = await openai.embeddings.create({
+            model: 'text-embedding-ada-002',
+            input: noteContent,
+        });
+
+        if (response.data && response.data.length > 0) {
+            return response.data[0].embedding;
+        } else {
+            throw new Error('Failed to generate embedding');
+        }
+    } catch (error) {
+        console.error('Error generating embedding:', error);
         throw error;
     }
 }

@@ -1,0 +1,46 @@
+.setupContainer {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+}
+
+.setupSection {
+    margin-bottom: 2rem;
+}
+
+.pathSelector {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.pathSelector input {
+    flex: 1;
+    padding: 0.5rem;
+}
+
+.apiKeyInput {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.error {
+    color: #ff4444;
+    margin: 1rem 0;
+}
+
+.submitButton {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.submitButton:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}

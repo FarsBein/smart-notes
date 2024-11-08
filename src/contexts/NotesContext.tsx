@@ -31,18 +31,26 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     useEffect(() => {
         const initializeNoteIndex = async () => {
-            const parentNotesFileNames = await window.electron.ipcRenderer.invoke('get-parent-notes-file-names');
-            setParentNotesFileNames(parentNotesFileNames);
+            try {
+                const parentNotesFileNames = await window.electron.ipcRenderer.invoke('get-parent-notes-file-names') || [];
+                setParentNotesFileNames(parentNotesFileNames);
 
-            const allNotesContent = await window.electron.ipcRenderer.invoke('get-all-notes-content');
-            setAllNotesContent(allNotesContent);
+                const allNotesContent = await window.electron.ipcRenderer.invoke('get-all-notes-content') || {};
+                setAllNotesContent(allNotesContent);
 
-            const allNotesMetadata = await window.electron.ipcRenderer.invoke('get-all-notes-metadata');
-            setAllNotesMetadata(allNotesMetadata);
-            
-            console.log('initializeNoteIndex parentNotesFileNames:', parentNotesFileNames);
-            console.log('initializeNoteIndex allNotesContent:', allNotesContent);
-            console.log('initializeNoteIndex allNotesMetadata:', allNotesMetadata);
+                const allNotesMetadata = await window.electron.ipcRenderer.invoke('get-all-notes-metadata') || {};
+                setAllNotesMetadata(allNotesMetadata);
+
+                console.log('initializeNoteIndex parentNotesFileNames:', parentNotesFileNames);
+                console.log('initializeNoteIndex allNotesContent:', allNotesContent);
+                console.log('initializeNoteIndex allNotesMetadata:', allNotesMetadata);
+            } catch (error) {
+                console.error('Error initializing note index:', error);
+                // Set default empty values
+                setParentNotesFileNames([]);
+                setAllNotesContent({});
+                setAllNotesMetadata({});
+            }
         };
 
         initializeNoteIndex();

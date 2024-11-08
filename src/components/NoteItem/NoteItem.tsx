@@ -19,9 +19,11 @@ interface NoteItemProps {
 // TODO: Optimize this component so it doesn't re-render on a change of another note's content or metadata
 const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, fileMetadata, isLast }) => {
 
-  if (!fileContent || !fileMetadata) {
+  if (!fileName || !fileContent || !fileMetadata) {
+    console.warn(`Missing required data for note: ${fileName}`);
     console.error('fileContent:', fileContent);
     console.error('fileMetadata:', fileMetadata);
+    return null;
   }
 
   const { basicSearchQuery, setParentNotesFileNames, filterByTags, setSelectedTags, setAllNotesContent, setAllNotesMetadata } = useNotes();
