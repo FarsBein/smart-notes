@@ -21,8 +21,9 @@ interface CommandListProps {
 }
 
 interface CustomClipboardItem {
+  source?: 'extension' | 'clipboard';
   type: string;
-  kind: 'string';
+  kind: string;
   getAsFile: () => File | null;
   getAsString: (callback: (str: string) => void) => void;
 }
@@ -190,6 +191,7 @@ const getSuggestionItems = (props: any) => [
             );
 
             const customDataTransfer: CustomDataTransferList = {
+              // source: 'extension',
               length: items.length,
               item: (i: number) => items[i],
               [Symbol.iterator]: function* () {
