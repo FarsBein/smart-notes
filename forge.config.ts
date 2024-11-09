@@ -33,7 +33,7 @@ const config: ForgeConfig = {
             },
           },
           {
-            name: '',
+            name: 'popup_window',
             html: './src/index.html',
             js: './src/renderer.ts',
             preload: {

@@ -14,6 +14,8 @@ import { loadConfig } from './config';
 // whether you're running in development or production).
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
+declare const POPUP_WINDOW_WEBPACK_ENTRY: string;
+declare const POPUP_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -107,7 +109,7 @@ function createPopup() {
       contextIsolation: true,
       nodeIntegrationInWorker: false,
       nodeIntegrationInSubFrames: false,
-      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      preload: POPUP_WINDOW_PRELOAD_WEBPACK_ENTRY,
       sandbox: false,
       spellcheck: true,
     },
@@ -115,12 +117,14 @@ function createPopup() {
 
   popupWindow.webContents.session.setSpellCheckerLanguages(['en-US', 'en-CA']);
 
-  // popupWindow.webContents.openDevTools();
+  popupWindow.webContents.openDevTools();
 
   // Load the correct URL for the popup
   const popupUrl = new URL(MAIN_WINDOW_WEBPACK_ENTRY);
-  popupUrl.searchParams.set('view', 'popup'); // Use a query parameter instead of hash
-  popupWindow.loadURL('http://localhost:3000/popup');
+  popupUrl.searchParams.set('view', 'popup');
+
+  // popupWindow.loadURL('http://localhost:3000/popup');
+  popupWindow.loadURL(POPUP_WINDOW_WEBPACK_ENTRY + '?view=popup');
 
 
   // Set up context menu
@@ -178,8 +182,14 @@ function createPopup() {
   // Add this console log to remind you it's a temporary change
   console.log('TESTING: popupWindow will remain open even when losing focus');
 
+  // Handle window closing
   popupWindow.on('closed', () => {
     popupWindow = null;
+  });
+
+  // Add after creating popupWindow
+  popupWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('Failed to load popup:', errorCode, errorDescription);
   });
 }
 

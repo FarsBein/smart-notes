@@ -120,10 +120,13 @@ class IndexFileHandler {
         try {
             // Try to read existing index file
             const data = await this.fileService.readJsonFile<IndexFile>(this.indexPath);
+            // Validate the structure
+            if (!data || typeof data !== 'object' || Array.isArray(data)) {
+                throw new Error('Invalid index file structure');
+            }
             return data;
         } catch (error) {
-            console.log(`No existing index file found at ${this.indexPath}, creating new one`);
-            // Create default index structure
+            console.log(`Creating new index file at ${this.indexPath}`);
             const defaultIndex: IndexFile = {
                 notes: {},
                 replies: {},
@@ -136,18 +139,8 @@ class IndexFileHandler {
                 folderIndex: {},
                 tagIndex: {}
             };
-
-            // Write the default index to file
-            try {
-                await this.fileService.writeJsonFile(this.indexPath, defaultIndex);
-                return defaultIndex;
-            } catch (writeError) {
-                console.error('Error creating new index file:', writeError);
-                throw new NotesError(
-                    `Failed to create index file: ${writeError.message}`,
-                    ErrorCodes.FILE_WRITE_ERROR
-                );
-            }
+            await this.fileService.writeJsonFile(this.indexPath, defaultIndex);
+            return defaultIndex;
         }
     }
 

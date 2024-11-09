@@ -36,7 +36,18 @@ async function initializePaths() {
         try {
             await fs.access(indexPath);
         } catch {
-            await fs.writeFile(indexPath, JSON.stringify([], null, 2));
+            await fs.writeFile(indexPath, JSON.stringify({
+                notes: {},
+                replies: {},
+                noteList: [],
+                folderStructure: {
+                    id: ['root'],
+                    name: 'Root',
+                    children: []
+                },
+                folderIndex: {},
+                tagIndex: {}
+            }, null, 2));
         }
 
         try {
