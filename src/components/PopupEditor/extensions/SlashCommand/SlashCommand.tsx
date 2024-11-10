@@ -9,15 +9,18 @@ import { EditorProps } from '../../Editor'
 import { getLinkAndSelectionFromWebpage } from './helperFunctions'
 
 interface SuggestionItem {
-  title: string,
-  icon: React.ReactNode,
-  command: (editor: Editor, range: Range) => void
+  title: string;
+  description: string;
+  category: 'basic' | 'format' | 'list' | 'actions';
+  icon: React.ReactNode;
+  shortcut?: string;
+  command: (editor: Editor, range: Range) => void;
 }
 
 interface CommandListProps {
-  items: SuggestionItem[]
-  command: (item: SuggestionItem) => void
-  query?: string
+  items: SuggestionItem[];
+  command: (item: SuggestionItem) => void;
+  query?: string;
 }
 
 interface CustomClipboardItem {
@@ -34,117 +37,248 @@ interface CustomDataTransferList {
   [Symbol.iterator]: () => Generator<CustomClipboardItem>;
 }
 
+interface SelectedState {
+  categoryIndex: number;
+  itemIndex: number;
+}
+
 const CommandList = React.forwardRef((props: CommandListProps, ref: any) => {
-  const [selectedIndex, setSelectedIndex] = React.useState(0)
-  const { items, command, query } = props
+  const [selected, setSelected] = React.useState<SelectedState>({ categoryIndex: 0, itemIndex: 0 });
+  const { items, command, query } = props;
+  const commandListRef = React.useRef<HTMLDivElement>(null);
+  const selectedItemRef = React.useRef<HTMLButtonElement>(null);
 
   const filteredItems = React.useMemo(() => {
-    if (!query) return items
-    return items.filter(item =>
-      item.title.toLowerCase().includes(query.toLowerCase())
-    )
-  }, [items, query])
+    if (!query) return items;
+    return items.filter(item => 
+      item.title.toLowerCase().includes(query.toLowerCase()) ||
+      item.description.toLowerCase().includes(query.toLowerCase()) ||
+      item.category.toLowerCase().includes(query.toLowerCase())
+    );
+  }, [items, query]);
 
-  const selectItem = (index: number) => {
-    const item = filteredItems[index]
-    if (item) command(item)
-  }
+  const groupedItems = React.useMemo(() => {
+    return filteredItems.reduce((acc, item) => {
+      if (!acc[item.category]) {
+        acc[item.category] = [];
+      }
+      acc[item.category].push(item);
+      return acc;
+    }, {} as Record<string, SuggestionItem[]>);
+  }, [filteredItems]);
 
+  const categories = Object.keys(groupedItems);
+
+  // Ensure selected indices are valid
+  React.useEffect(() => {
+    if (categories.length === 0) return;
+    
+    setSelected(current => {
+      const validCategoryIndex = Math.min(current.categoryIndex, categories.length - 1);
+      const category = categories[validCategoryIndex];
+      const categoryItems = groupedItems[category] || [];
+      const validItemIndex = Math.min(current.itemIndex, categoryItems.length - 1);
+      
+      return {
+        categoryIndex: validCategoryIndex,
+        itemIndex: validItemIndex
+      };
+    });
+  }, [categories, groupedItems]);
+
+  // Update the auto-scroll effect
+  React.useEffect(() => {
+    const commandList = commandListRef.current;
+    const selectedItem = selectedItemRef.current;
+
+    if (!commandList || !selectedItem) return;
+
+    const listTop = commandList.scrollTop;
+    const listBottom = listTop + commandList.clientHeight;
+    const itemTop = selectedItem.offsetTop;
+    const itemBottom = itemTop + selectedItem.offsetHeight;
+
+    if (itemTop < listTop) {
+      // If item is above visible area
+      commandList.scrollTop = itemTop;
+    } else if (itemBottom > listBottom) {
+      // If item is below visible area
+      commandList.scrollTop = itemBottom - commandList.clientHeight;
+    }
+  }, [selected.categoryIndex, selected.itemIndex]);
+
+  const selectItem = (categoryIndex: number, itemIndex: number) => {
+    const category = categories[categoryIndex];
+    const item = groupedItems[category]?.[itemIndex];
+    if (item) command(item);
+  };
+
+  // Enhanced keyboard navigation
   React.useImperativeHandle(ref, () => ({
     onKeyDown: ({ event }: { event: KeyboardEvent }) => {
+      if (categories.length === 0) return false;
+
       if (event.key === 'ArrowUp') {
-        setSelectedIndex((selectedIndex + filteredItems.length - 1) % filteredItems.length)
-        return true
+        event.preventDefault();
+        setSelected(current => {
+          const currentCategory = categories[current.categoryIndex];
+          const categoryItems = groupedItems[currentCategory] || [];
+          
+          if (current.itemIndex > 0) {
+            return { ...current, itemIndex: current.itemIndex - 1 };
+          } else if (current.categoryIndex > 0) {
+            const prevCategory = categories[current.categoryIndex - 1];
+            const prevCategoryItems = groupedItems[prevCategory] || [];
+            return {
+              categoryIndex: current.categoryIndex - 1,
+              itemIndex: prevCategoryItems.length - 1
+            };
+          }
+          return current;
+        });
+        return true;
       }
+      
       if (event.key === 'ArrowDown') {
-        setSelectedIndex((selectedIndex + 1) % filteredItems.length)
-        return true
+        event.preventDefault();
+        setSelected(current => {
+          const currentCategory = categories[current.categoryIndex];
+          const categoryItems = groupedItems[currentCategory] || [];
+          
+          if (current.itemIndex < categoryItems.length - 1) {
+            return { ...current, itemIndex: current.itemIndex + 1 };
+          } else if (current.categoryIndex < categories.length - 1) {
+            return {
+              categoryIndex: current.categoryIndex + 1,
+              itemIndex: 0
+            };
+          }
+          return current;
+        });
+        return true;
       }
+
       if (event.key === 'Enter') {
-        selectItem(selectedIndex)
-        return true
+        event.preventDefault();
+        selectItem(selected.categoryIndex, selected.itemIndex);
+        return true;
       }
-      return false
+      return false;
     },
-  }))
+  }));
 
-  React.useEffect(() => {
-    setSelectedIndex(0)
-  }, [filteredItems.length])
-
-  if (filteredItems.length === 0) {
+  if (categories.length === 0) {
     return (
       <div className={styles.commandList}>
-        <div className={styles.commandItem}>No results found</div>
+        <div className={styles.noResults}>No matching commands found</div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className={styles.commandList}>
-      {filteredItems.map((item, index) => (
-        <button
-          key={index}
-          className={`${styles.commandItem} ${index === selectedIndex ? styles.selected : ''
-            }`}
-          onClick={() => selectItem(index)}
-        >
-          {item.icon}
-          <span>{item.title}</span>
-        </button>
+    <div className={styles.commandList} ref={commandListRef}>
+      {categories.map((category, categoryIndex) => (
+        <div key={category} className={styles.category}>
+          <div className={styles.categoryTitle}>{category}</div>
+          {groupedItems[category].map((item, itemIndex) => (
+            <button
+              key={item.title}
+              ref={
+                categoryIndex === selected.categoryIndex && 
+                itemIndex === selected.itemIndex ? 
+                selectedItemRef : null
+              }
+              className={`${styles.commandItem} ${
+                categoryIndex === selected.categoryIndex && 
+                itemIndex === selected.itemIndex ? styles.selected : ''
+              }`}
+              onClick={() => selectItem(categoryIndex, itemIndex)}
+            >
+              <div className={styles.commandIcon}>{item.icon}</div>
+              <div className={styles.commandContent}>
+                <div className={styles.commandTitle}>{item.title}</div>
+                <div className={styles.commandDescription}>{item.description}</div>
+              </div>
+              {item.shortcut && (
+                <div className={styles.commandShortcut}>{item.shortcut}</div>
+              )}
+            </button>
+          ))}
+        </div>
       ))}
     </div>
-  )
-})
+  );
+});
 
 CommandList.displayName = 'CommandList'
 
 const getSuggestionItems = (props: any) => [
   {
     title: 'Heading 1',
-    icon: <Heading1 className="w-4 h-4" />,
+    description: 'Add a heading 1',
+    category: 'format',
+    icon: <Heading1 className={styles.icon} />,
+    shortcut: 'Ctrl+1',
     command: ({ editor, range }: any) => {
       editor.chain().focus().deleteRange(range).setNode('heading', { level: 1 }).run()
     },
   },
   {
     title: 'Heading 2',
-    icon: <Heading2 className="w-4 h-4" />,
+    description: 'Add a heading 2',
+    category: 'format',
+    icon: <Heading2 className={styles.icon} />,
+    shortcut: 'Ctrl+2',
     command: ({ editor, range }: any) => {
       editor.chain().focus().deleteRange(range).setNode('heading', { level: 2 }).run()
     },
   },
   {
     title: 'Bullet List',
-    icon: <List className="w-4 h-4" />,
+    description: 'Add a bullet list',
+    category: 'list',
+    icon: <List className={styles.icon} />,
+    shortcut: 'Ctrl+3',
     command: ({ editor, range }: any) => {
       editor.chain().focus().deleteRange(range).toggleBulletList().run()
     },
   },
   {
     title: 'Numbered List',
-    icon: <ListOrdered className="w-4 h-4" />,
+    description: 'Add a numbered list',
+    category: 'list',
+    icon: <ListOrdered className={styles.icon} />,
+    shortcut: 'Ctrl+4',
     command: ({ editor, range }: any) => {
       editor.chain().focus().deleteRange(range).toggleOrderedList().run()
     },
   },
   {
     title: 'Blockquote',
-    icon: <Quote className="w-4 h-4" />,
+    description: 'Add a blockquote',
+    category: 'format',
+    icon: <Quote className={styles.icon} />,
+    shortcut: 'Ctrl+5',
     command: ({ editor, range }: any) => {
       editor.chain().focus().deleteRange(range).toggleBlockquote().run()
     },
   },
   {
     title: 'Code Block',
-    icon: <Code className="w-4 h-4" />,
+    description: 'Add a code block',
+    category: 'format',
+    icon: <Code className={styles.icon} />,
+    shortcut: 'Ctrl+6',
     command: ({ editor, range }: any) => {
       editor.chain().focus().deleteRange(range).toggleCodeBlock().run()
     },
   },
   {
     title: 'Save',
-    icon: <Save className="w-4 h-4" />,
+    description: 'Save the document',
+    category: 'actions',
+    icon: <Save className={styles.icon} />,
+    shortcut: 'Ctrl+S',
     command: ({ editor, range }: any) => {
       editor.chain().focus().deleteRange(range).run()
       props.onSave?.()
@@ -152,7 +286,10 @@ const getSuggestionItems = (props: any) => [
   },
   {
     title: 'Clear Attachments',
-    icon: <Paperclip className="w-4 h-4" />,
+    description: 'Clear all attachments',
+    category: 'actions',
+    icon: <Paperclip className={styles.icon} />,
+    shortcut: 'Ctrl+0',
     command: ({ editor, range }: any) => {
       editor.chain().focus().deleteRange(range).run()
       props.onClearAttachments?.()
@@ -160,7 +297,10 @@ const getSuggestionItems = (props: any) => [
   },
   {
     title: 'Close',
-    icon: <X className="w-4 h-4" />,
+    description: 'Close the editor',
+    category: 'actions',
+    icon: <X className={styles.icon} />,
+    shortcut: 'Ctrl+W',
     command: ({ editor, range }: any) => {
       editor.chain().focus().deleteRange(range).run()
       props.onClose?.()
@@ -168,7 +308,10 @@ const getSuggestionItems = (props: any) => [
   },
   {
     title: 'Paste from Clipboard',
-    icon: <Clipboard className="w-4 h-4" />,
+    description: 'Paste content from the clipboard',
+    category: 'actions',
+    icon: <Clipboard className={styles.icon} />,
+    shortcut: 'Ctrl+V',
     command: ({ editor, range }: any) => {
       editor.chain().focus().deleteRange(range).run()
       navigator.clipboard.read()
@@ -211,7 +354,10 @@ const getSuggestionItems = (props: any) => [
   },
   {
     title: 'Link and Selection from Webpage',
-    icon: <Link className="w-4 h-4" />,
+    description: 'Add a link and selection from the webpage',
+    category: 'actions',
+    icon: <Link className={styles.icon} />,
+    shortcut: 'Ctrl+L',
     command: async ({ editor, range }: any) => {
       editor.chain().focus().deleteRange(range).run()
       const link = await getLinkAndSelectionFromWebpage()

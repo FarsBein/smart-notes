@@ -96,10 +96,20 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({
     },
   }));
 
+  const handleWrapperClick = (e: React.MouseEvent) => {
+    // Only focus if clicking directly on the wrapper (not on existing content)
+    if (e.target === e.currentTarget) {
+      editor?.commands.focus('end');
+    }
+  };
+
   if (!editor) return null
 
   return (
-    <div className={styles.editorWrapper}>
+    <div 
+      className={styles.editorWrapper} 
+      onClick={handleWrapperClick}
+    >
       {editor && (
         <BubbleMenu className={styles.bubbleMenu} editor={editor}>
           <Toolbar editor={editor} />
@@ -111,32 +121,3 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({
 })
 
 Editor.displayName = 'Editor';
-
-
-// usage example
-// import { useRef } from 'react';
-// import { Editor, EditorRef } from '../../components/NewMarkdownEditor/Editor';
-//   const editorRef = useRef<EditorRef>(null);
-//   const [content, setContent] = useState<string>('# nice');
-//   const saveEdit = async () => {
-//     try {
-//       if (editorRef.current) {
-//         const markdown = editorRef.current.getMarkdown();
-//         console.log('markdown:', markdown);
-//         setContent(markdown);
-//       }
-//     } catch (error) {
-//       console.error('Failed to save edit:', error);
-//     }
-//   };
-//   return (
-//       <>
-//         <Editor 
-//           ref={editorRef}
-//           content={content} 
-//         />
-//         <div className={styles.actions}>
-//           <button onClick={saveEdit}>Save</button>
-//         </div>
-//       </>
-//   );
