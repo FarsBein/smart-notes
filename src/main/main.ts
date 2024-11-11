@@ -36,6 +36,8 @@ const createWindow = (): void => {
       contextIsolation: true,
       nodeIntegration: false,
       spellcheck: true,
+      navigateOnDragDrop: false,
+      disableHtmlFullscreenWindowResize: true
     }
   });
 
@@ -112,6 +114,8 @@ function createPopup() {
       preload: POPUP_WINDOW_PRELOAD_WEBPACK_ENTRY,
       sandbox: false,
       spellcheck: true,
+      navigateOnDragDrop: false,
+      disableHtmlFullscreenWindowResize: true
     },
   });
 
@@ -296,5 +300,20 @@ ipcMain.handle('show-directory-picker', async () => {
         return result.filePaths[0];
     }
     return null;
+});
+
+// Add after the app initialization
+app.on('web-contents-created', (event, contents) => {
+  contents.setWindowOpenHandler(({ url }) => {
+    // Open all links in external browser
+    require('electron').shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
+  // Handle regular link clicks
+  contents.on('will-navigate', (event, url) => {
+    event.preventDefault();
+    require('electron').shell.openExternal(url);
+  });
 });
 
