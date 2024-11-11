@@ -8,16 +8,19 @@ import IndexFileHandler from '../services/indexFileHandler';
 import EmbeddingFileHandler from '../services/embeddingFileHandler';
 import MarkdownFileHandler from '../services/markdownFileHandler';
 import { loadConfig, saveConfig, isConfigured } from '../config';
+import LinksFileHandler from '../services/linksFileHandler';
 
 let notesPath: string;
 let attachmentsDir: string;
 let indexPath: string;
 let embeddingsPath: string;
+let linksPath: string;
 
 // Create handlers after initialization
 let indexFileHandler: IndexFileHandler;
 let markdownFileHandler: MarkdownFileHandler;
 let embeddingHandler: EmbeddingFileHandler;
+export let linksFileHandler: LinksFileHandler;
 
 async function initializePaths() {
     try {
@@ -27,6 +30,7 @@ async function initializePaths() {
         attachmentsDir = path.join(notesPath, 'attachments');
         indexPath = path.join(notesPath, 'metadata_index.json');
         embeddingsPath = path.join(notesPath, 'embeddings.json');
+        linksPath = path.join(notesPath, 'links.json');
 
         // Create directories if they don't exist
         await fs.mkdir(notesPath, { recursive: true });
@@ -56,10 +60,17 @@ async function initializePaths() {
             await fs.writeFile(embeddingsPath, JSON.stringify({}, null, 2));
         }
 
+        try {
+            await fs.access(linksPath);
+        } catch {
+            await fs.writeFile(linksPath, JSON.stringify({}, null, 2));
+        }
+
         // Initialize handlers after paths are set
         indexFileHandler = new IndexFileHandler(indexPath);
         markdownFileHandler = new MarkdownFileHandler(notesPath);
         embeddingHandler = new EmbeddingFileHandler(embeddingsPath);
+        linksFileHandler = new LinksFileHandler(linksPath);
     } catch (error) {
         console.error('Failed to initialize paths:', error);
         throw error;
@@ -317,12 +328,28 @@ ipcMain.handle('get-parent-notes-file-names', async (event) => {
     return indexFileHandler.getParentNotesFileNames();
 });
 
+async function deleteAttachments(attachments: string[]) {
+    if (!attachments?.length) return;
+    
+    for (const attachment of attachments) {
+        try {
+            if (attachment.startsWith('http')) { // is a link
+                await linksFileHandler.removeLink(attachment);
+            }
+        } catch (error) {
+            console.error('Error processing attachment during deletion:', error);
+        }
+    }
+}
+
 ipcMain.handle('delete-note', async (event, fileName: string): Promise<void> => {
     const metadata = indexFileHandler.getMetadata(fileName);
     const metadataOfReplies = metadata.replies.map(reply => indexFileHandler.getMetadata(reply));
     const metadataOfAllFiles = [metadata, ...metadataOfReplies];
+    
     try {
         await Promise.all(metadataOfAllFiles.map(async (metadata) => {
+            await deleteAttachments(metadata.attachments); // Delete attachments first
             await indexFileHandler.deleteNoteOrReply(metadata.fileName, false);
             await indexFileHandler.deleteFileFromTags(metadata.fileName, metadata.tags, false);
             await embeddingHandler.deleteEmbedding(metadata.fileName, false);
@@ -343,6 +370,9 @@ ipcMain.handle('delete-note', async (event, fileName: string): Promise<void> => 
 
 ipcMain.handle('delete-reply', async (event, fileName: string): Promise<void> => {
     try {
+        const metadata = indexFileHandler.getMetadata(fileName);
+        
+        await deleteAttachments(metadata.attachments); // Delete attachments first
         await indexFileHandler.deleteReply(fileName);
         await embeddingHandler.deleteEmbedding(fileName);
         await markdownFileHandler.deleteFile(fileName);

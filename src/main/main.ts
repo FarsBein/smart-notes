@@ -46,7 +46,11 @@ const createWindow = (): void => {
       callback({
         responseHeaders: {
           ...details.responseHeaders,
-          'Content-Security-Policy': ["default-src 'self' 'unsafe-inline' 'unsafe-eval' data:; img-src 'self' data: safe-file:; connect-src 'self' ws:;"]
+          'Content-Security-Policy': [
+            "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https: http:;" +
+            "img-src 'self' data: https: http: safe-file:;" +
+            "connect-src 'self' ws: https: http:;"
+          ]
         }
       });
     });
@@ -213,15 +217,7 @@ app.on('ready', () => {
       if (filePath.includes('attachments')) {
         // Ensure proper path joining for Windows
         const attachmentsPath = path.join(notesPath, filePath);
-        
-        console.log('Attachment request:', {
-          requestUrl: request.url,
-          requestPath,
-          filePath,
-          attachmentsPath,
-          exists: require('fs').existsSync(attachmentsPath)
-        });
-        
+
         if (require('fs').existsSync(attachmentsPath)) {
           callback({ path: attachmentsPath });
         } else {

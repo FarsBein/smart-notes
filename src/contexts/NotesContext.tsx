@@ -75,7 +75,6 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setParentNotesFileNames(prevParentNotesFileNames => [...newNotes.filter(note => !note.metadata.isReply).map(note => note.fileName), ...prevParentNotesFileNames]);
             setAllNotesContent(prevAllNotesContent => ({ ...prevAllNotesContent, ...newNotes.reduce((acc, note) => ({ ...acc, [note.fileName]: note.content }), {}) }));
             setAllNotesMetadata(prevAllNotesMetadata => ({ ...prevAllNotesMetadata, ...newNotes.reduce((acc, note) => ({ ...acc, [note.fileName]: note.metadata }), {}) }));
-            console.log('handleUpdateMainWindowWithNewNotes newNotes:', newNotes);
         };
 
         window.electron.ipcRenderer.on('new-notes-sent', handleUpdateMainWindowWithNewNotes);
