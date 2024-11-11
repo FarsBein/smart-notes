@@ -18,7 +18,7 @@ const MainWindow: React.FC = () => {
 const App: React.FC = () => {
   const location = useLocation();
 
-  const isPopup = window.location.pathname.includes('popup');
+  const isPopup = new URLSearchParams(window.location.search).get('view') === 'popup';
 
   if (isPopup) {
     return <Popup />;

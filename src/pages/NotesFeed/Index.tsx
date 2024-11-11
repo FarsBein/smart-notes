@@ -42,6 +42,7 @@ const NotesList: React.FC = () => {
 
   return (
     <>
+      <div style={{ height: 'var(--spacing-4)' }}></div>
       {notesToDisplay.map((fileName: string) => {
         // Only render if we have both content and metadata
         if (!allNotesContent[fileName] || !allNotesMetadata[fileName]) {

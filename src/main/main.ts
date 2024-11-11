@@ -305,13 +305,25 @@ ipcMain.handle('show-directory-picker', async () => {
 // Add after the app initialization
 app.on('web-contents-created', (event, contents) => {
   contents.setWindowOpenHandler(({ url }) => {
-    // Open all links in external browser
+    // Allow internal webpack entry points
+    if (url === MAIN_WINDOW_WEBPACK_ENTRY || 
+        url === POPUP_WINDOW_WEBPACK_ENTRY) {
+      return { action: 'allow' };
+    }
+    
+    // Open external links in browser
     require('electron').shell.openExternal(url);
     return { action: 'deny' };
   });
 
-  // Handle regular link clicks
   contents.on('will-navigate', (event, url) => {
+    // Allow internal webpack entry points
+    if (url === MAIN_WINDOW_WEBPACK_ENTRY || 
+        url === POPUP_WINDOW_WEBPACK_ENTRY) {
+      return;
+    }
+    
+    // Prevent navigation and open external links in browser
     event.preventDefault();
     require('electron').shell.openExternal(url);
   });
