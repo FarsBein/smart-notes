@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { parseMarkdown } from '../utils/markdownInput';
-import styles from '../Shared.module.scss';
+import { parseMarkdown } from '../../PopupEditor/utils/markdownInput';
+import styles from './MarkdownViewer.module.scss';
 
 interface MarkdownViewerProps {
   content: string;

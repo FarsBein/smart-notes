@@ -1,5 +1,5 @@
 @import '../../styles/themes.scss';
-@import './Shared.module.scss';
+@import '../PopupEditor/Shared.module.scss';
 
 .editorWrapper {
   min-height: var(--spacing-10);

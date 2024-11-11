@@ -5,8 +5,8 @@ import Typography from '@tiptap/extension-typography'
 import Toolbar from './Toolbar/Toolbar'
 import styles from './Editor.module.scss'
 import { forwardRef, useImperativeHandle } from 'react'
-import { generateMarkdown } from './utils/markdownOutput'
-import { parseMarkdown } from './utils/markdownInput'
+import { generateMarkdown } from '../PopupEditor/utils/markdownOutput'
+import { parseMarkdown } from '../PopupEditor/utils/markdownInput'
 import { Tag, SlashCommands } from './extensions'
 
 interface EditorProps {
