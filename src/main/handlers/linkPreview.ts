@@ -25,7 +25,7 @@ ipcMain.handle('get-link-preview', async (_, url: string) => {
         await linksFileHandler.addLink(url, previewData);
         return previewData;
     } catch (error) {
-        console.error('Error fetching link preview:', error);
+        console.error('Error fetching link preview');
         return getFallbackPreview();
     }
 });
@@ -101,7 +101,7 @@ async function getGeneralPreview(url: string): Promise<LinkMetadata> {
             lastFetched: Date.now()
         };
     } catch (error) {
-        console.error('Error in getGeneralPreview:', error);
+        console.error('Error in getGeneralPreview');
         return getFallbackPreview();
     }
 }
@@ -137,7 +137,7 @@ function getSchemaOrgData(doc: Document): Partial<LinkMetadata> {
                 lastFetched: Date.now()
             };
         } catch (e) {
-            console.error('Error parsing LD+JSON: ', e);
+            console.error('Error parsing LD+JSON');
         }
     }
     return {};
