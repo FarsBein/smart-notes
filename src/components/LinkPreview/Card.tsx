@@ -10,15 +10,14 @@ interface CardProps {
   onClick?: () => void;
 }
 
-export const Card: React.FC<CardProps> = ({ 
+export const Card: React.FC<CardProps> = ({
   title,
   description,
   summary,
   imageUrl,
   url,
-  onClick = () => {}
+  onClick = () => { }
 }) => {
-  // Extract domain from URL
   const domain = url ? new URL(url).hostname.replace('www.', '') : '';
 
   return (
@@ -26,11 +25,19 @@ export const Card: React.FC<CardProps> = ({
       <div className={styles.linkCardImageContainer}>
         <img
           src={imageUrl}
-          alt={domain}
+          alt={title}
           className={styles.linkCardImage}
         />
-        <div className={styles.linkCardOverlay}>
-          <button className={styles.linkCardDomain}>{domain}</button>
+      </div>
+      <div className={styles.linkCardContent}>
+        <h2 className={styles.linkCardTitle}>{title}</h2>
+        <p className={styles.linkCardDescription}>{description}</p>
+        <div className={styles.linkCardMeta}>
+          <img
+            src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}
+            alt={domain}
+          />
+          <span>{domain}</span>
         </div>
       </div>
     </div>

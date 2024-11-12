@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './LinkPreview.module.scss';
 import { Card } from './Card';
+import { SkeletonLoader } from './SkeletonLoader';
 
 interface LinkPreviewProps {
     link: string;
@@ -34,7 +35,7 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({ link }) => {
     }, [link]);
 
     if (loading) {
-        return <div className={styles.linkPreview}>Loading...</div>;
+        return <SkeletonLoader />;
     }
 
     return (
