@@ -311,7 +311,7 @@ ipcMain.handle('save-reply', async (event, noteContent: string, attachments: Att
 
 ipcMain.handle('get-all-info', async (event, fileName: string) => {
     try {
-        const metadata = await indexFileHandler.getMetadata(fileName);
+        const metadata = indexFileHandler.getMetadata(fileName);
         const content = await markdownFileHandler.getContent(fileName);
         return { metadata, content };
     } catch (error) {
