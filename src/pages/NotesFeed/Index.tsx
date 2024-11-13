@@ -1,13 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import styles from './NotesFeed.module.scss';
 import { useNotes } from '../../contexts/NotesContext';
 import SearchBar from './SearchBar';
 import NoteItem from '../../components/NoteItem/NoteItem';
 import { useActionButtons } from '../../contexts/ActionButtons';
+import Notification from '../../components/Notification/Notification';
 
 const NotesList: React.FC = () => {
   const { parentNotesFileNames, filteredParentNotesFileNames, allNotesContent, allNotesMetadata } = useNotes();
   const [isLoading, setIsLoading] = useState(true);
+  const [notification, setNotification] = useState<{fileName: string, content: string} | null>(null);
+  const notesListRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleNewNote = (newNote: { fileName: string, content: string }) => {
+      setNotification(newNote);
+    };
+
+    window.electron.ipcRenderer.on('new-notes-sent', handleNewNote);
+    return () => {
+      window.electron.ipcRenderer.removeListener('new-notes-sent', handleNewNote);
+    };
+  }, []);
+
+  const scrollToTop = () => {
+    notesListRef.current?.scrollIntoView({ behavior: 'smooth'});
+  };
 
   const isDataReady = () => {
     return parentNotesFileNames !== undefined && 
@@ -21,12 +39,14 @@ const NotesList: React.FC = () => {
     }
   }, [parentNotesFileNames, allNotesContent, allNotesMetadata]);
 
-  if (isLoading) {
-    return <div>Loading notes...</div>;
-  }
+  
   console.log('parentNotesFileNames:', parentNotesFileNames);
   console.log('allNotesContent:', allNotesContent);
   const notesToDisplay = filteredParentNotesFileNames ?? parentNotesFileNames;
+
+  if (isLoading) {
+    return <div>Loading notes...</div>;
+  }
 
   if (!notesToDisplay?.length) {
     return (
@@ -41,8 +61,14 @@ const NotesList: React.FC = () => {
   }
 
   return (
-    <>
-      <div style={{ height: 'var(--spacing-4)' }}></div>
+    <div ref={notesListRef}>
+      {notification && (
+        <Notification
+          message="New note created"
+          onClose={() => setNotification(null)}
+          onClick={scrollToTop}
+        />
+      )}
       {notesToDisplay.map((fileName: string) => {
         // Only render if we have both content and metadata
         if (!allNotesContent[fileName] || !allNotesMetadata[fileName]) {
@@ -80,7 +106,7 @@ const NotesList: React.FC = () => {
           </React.Fragment>
         );
       })}
-    </>
+    </div>
   );
 };
 
