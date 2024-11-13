@@ -26,7 +26,6 @@ export const useAttachment = () => {
                         key={index}
                         src={`safe-file://${parsedAttachment}`}
                         alt="Attachment"
-                        className={styles['note-attachment-image']}
                     />
                 );
             } else if (isLink(parsedAttachment)) {

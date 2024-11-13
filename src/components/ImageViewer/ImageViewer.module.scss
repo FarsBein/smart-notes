@@ -4,7 +4,8 @@
         cursor: pointer;
         display: block;
         max-width: 100%;
-        height: 100%;
+        width: auto;
+        height: auto;
         border-radius: var(--border-radius-lg);
     }
 
@@ -15,7 +16,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: rgba(0, 0, 0, 0.8);
+        background-color: var(--color-background-primary);
     }
 
     &-controls {
