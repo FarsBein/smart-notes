@@ -1,0 +1,13 @@
+.container {
+  height: calc(100vh - var(--title-bar-height));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  height: calc(100vh - var(--title-bar-height));
+} 

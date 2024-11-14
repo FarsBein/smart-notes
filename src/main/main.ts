@@ -96,20 +96,11 @@ function createPopup() {
   const cursor = screen.getCursorScreenPoint();
   const currentDisplay = screen.getDisplayNearestPoint(cursor);
 
-  const width = 700;
-  const height = 700;
-
-  const x = currentDisplay.bounds.x + Math.round((currentDisplay.bounds.width - width) / 2);
-  const y = currentDisplay.bounds.y + Math.round((currentDisplay.bounds.height - height) / 2);
-
   popupWindow = new BrowserWindow({
-    width,
-    height,
-    x,
-    y,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
+    useContentSize: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -125,7 +116,7 @@ function createPopup() {
 
   popupWindow.webContents.session.setSpellCheckerLanguages(['en-US', 'en-CA']);
 
-  popupWindow.webContents.openDevTools();
+  // popupWindow.webContents.openDevTools();
 
   // Load the correct URL for the popup
   const popupUrl = new URL(MAIN_WINDOW_WEBPACK_ENTRY);
@@ -187,9 +178,6 @@ function createPopup() {
   });
   */
   
-  // Add this console log to remind you it's a temporary change
-  console.log('TESTING: popupWindow will remain open even when losing focus');
-
   // Handle window closing
   popupWindow.on('closed', () => {
     popupWindow = null;

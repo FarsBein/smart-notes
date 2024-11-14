@@ -4,14 +4,19 @@ import Popup from './pages/PromptWindow/Index';
 import NotesFeed from './pages/NotesFeed/Index';
 import TitleBar from './components/TitleBar/TitleBar';
 import BottomBar from './components/BottomBar/BottomBar';
+import Sidebar from './components/Sidebar/Sidebar';
+import styles from './App.module.scss';
 
 const MainWindow: React.FC = () => {
   return (
-    <>
+    <div className={styles.container}>
       <TitleBar />
-      <NotesFeed />
+      <div className={styles.content}>
+        <Sidebar />
+        <NotesFeed />
+      </div>
       <BottomBar />
-    </>
+    </div>
   );
 };
 
