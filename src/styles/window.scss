@@ -1,7 +1,7 @@
 @import './themes.scss';
 
 ::-webkit-scrollbar {
-    width: var(--spacing-2);
+    width: var(--spacing-4);
 }
 
 ::-webkit-scrollbar-track {
@@ -11,6 +11,7 @@
 ::-webkit-scrollbar-thumb {
     background: var(--color-text-tertiary);
     border-radius: var(--border-radius-lg);
+    border: 2px solid var(--color-background-primary);
 }
 
 ::-webkit-scrollbar-thumb:hover {

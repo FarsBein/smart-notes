@@ -506,22 +506,23 @@ class IndexFileHandler {
         return false;
     }
 
-    private removeFromTagsAndFolders(fileName: string): void {
-        // Remove from tags
-        Object.keys(this.index.tagIndex).forEach(tag => {
-            this.index.tagIndex[tag] = this.index.tagIndex[tag].filter(file => file !== fileName);
-            if (this.index.tagIndex[tag].length === 0) {
-                delete this.index.tagIndex[tag];
+    public async removeTagCompletely(tagToRemove: string): Promise<string[]> {
+        // Get all files that have this tag
+        const filesWithTag = this.index.tagIndex[tagToRemove] || [];
+        
+        // Remove tag from all files' metadata
+        for (const fileName of filesWithTag) {
+            const note = this.getMetadata(fileName);
+            if (note) {
+                note.tags = note.tags.filter(t => t !== tagToRemove);
             }
-        });
+        }
 
-        // Remove from folders
-        Object.keys(this.index.folderIndex).forEach(folder => {
-            this.index.folderIndex[folder] = this.index.folderIndex[folder].filter(file => file !== fileName);
-            if (this.index.folderIndex[folder].length === 0) {
-                delete this.index.folderIndex[folder];
-            }
-        });
+        // Remove tag from tagIndex
+        delete this.index.tagIndex[tagToRemove];
+        
+        await this.saveIndex();
+        return filesWithTag;
     }
 }
 

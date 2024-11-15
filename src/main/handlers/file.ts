@@ -77,7 +77,6 @@ async function initializePaths() {
     }
 }
 
-
 // Initialize immediately
 (async () => {
     await initializePaths();
@@ -443,5 +442,27 @@ ipcMain.handle('get-number-of-notes', async (event) => {
     } catch (error) {
         console.error('Error getting number of notes:', error);
         return 0;
+    }
+});
+
+ipcMain.handle('remove-tag-completely', async (event, tagToRemove: string) => {
+    try {
+        // Remove tag from index and get affected files
+        const affectedFiles = await indexFileHandler.removeTagCompletely(tagToRemove);
+        
+        // Update markdown files
+        for (const fileName of affectedFiles) {
+            await markdownFileHandler.updateTags(
+                fileName, 
+                indexFileHandler.getMetadata(fileName).tags
+            );
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Failed to remove tag completely:', error);
+        throw error instanceof NotesError 
+            ? error 
+            : new NotesError('UNKNOWN_ERROR', 'An unexpected error occurred');
     }
 });

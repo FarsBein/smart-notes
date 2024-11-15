@@ -13,7 +13,7 @@ const DEFAULT_NOTES_PATH = path.join(app.getPath('documents'), 'MyNotes');
 
 export async function loadConfig(): Promise<Config> {
 
-    console.log('Loading default notes path:', DEFAULT_NOTES_PATH);
+    // console.log('Loading default notes path:', DEFAULT_NOTES_PATH);
     // In development, use .env and default paths
     if (process.env.NODE_ENV === 'development') {
         dotenv.config();

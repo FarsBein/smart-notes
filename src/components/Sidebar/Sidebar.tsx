@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Inbox, Bell, CheckSquare, Plus } from 'lucide-react';
+import { Inbox, Bell, CheckSquare, Plus, X } from 'lucide-react';
 import styles from './Sidebar.module.scss';
 import { useNotes } from '@/contexts/NotesContext';
 
@@ -55,6 +55,24 @@ const Sidebar: React.FC = () => {
     }
   };
 
+  const handleDeleteTag = async (tag: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent tag selection when deleting
+    if (confirm(`Are you sure you want to delete the tag "${tag}"?`)) {
+      try {
+        await window.electron.ipcRenderer.invoke('remove-tag-completely', tag);
+        setCollections(prev => prev.filter(t => t !== tag));
+        // Remove from selected tags if it was selected
+        if (selectedTags.includes(tag)) {
+          const newTags = selectedTags.filter(t => t !== tag);
+          setSelectedTags(newTags);
+          filterByTags(newTags);
+        }
+      } catch (error) {
+        console.error('Error deleting tag:', error);
+      }
+    }
+  };
+
   const handleNewCollection = () => {
     const name = prompt('Enter collection name:');
     if (name) {
@@ -73,13 +91,21 @@ const Sidebar: React.FC = () => {
             <h3 className={styles.sectionTitle}>Collections</h3>
             <div className={styles.collectionsContainer}>
               {collections.map((tag, index) => (
-                <button 
-                  key={index} 
-                  className={`${styles.sidebarItem} ${selectedTags.includes(tag) ? styles.selected : ''}`}
-                  onClick={() => handleTagClick(tag)}
-                >
-                  <span>{tag}</span>
-                </button>
+                <div key={index} className={styles.tagContainer}>
+                  <button 
+                    className={`${styles.sidebarItem} ${selectedTags.includes(tag) ? styles.selected : ''}`}
+                    onClick={() => handleTagClick(tag)}
+                  >
+                    <span>{tag}</span>
+                  </button>
+                  <button
+                    className={styles.deleteTagButton}
+                    onClick={(e) => handleDeleteTag(tag, e)}
+                    aria-label={`Delete ${tag}`}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
               ))}
             </div>
           </div>
