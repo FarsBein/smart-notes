@@ -5,6 +5,7 @@ import SearchBar from './SearchBar';
 import NoteItem from '../../components/NoteItem/NoteItem';
 import { useActionButtons } from '../../contexts/ActionButtons';
 import Notification from '../../components/Notification/Notification';
+import BottomBar from '@/components/BottomBar/BottomBar';
 
 const NotesList: React.FC = () => {
   const { parentNotesFileNames, filteredParentNotesFileNames, allNotesContent, allNotesMetadata } = useNotes();
@@ -106,6 +107,7 @@ const NotesList: React.FC = () => {
           </React.Fragment>
         );
       })}
+      <BottomBar scrollToTop={scrollToTop} />
     </div>
   );
 };

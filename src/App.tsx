@@ -3,7 +3,6 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import Popup from './pages/PromptWindow/Index';
 import NotesFeed from './pages/NotesFeed/Index';
 import TitleBar from './components/TitleBar/TitleBar';
-import BottomBar from './components/BottomBar/BottomBar';
 import Sidebar from './components/Sidebar/Sidebar';
 import styles from './App.module.scss';
 
@@ -15,7 +14,6 @@ const MainWindow: React.FC = () => {
         <Sidebar />
         <NotesFeed />
       </div>
-      <BottomBar />
     </div>
   );
 };

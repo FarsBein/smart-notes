@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Inbox, Calendar, Bell, CheckSquare, List, Plus } from 'lucide-react';
+import { Inbox, Bell, CheckSquare, Plus } from 'lucide-react';
 import styles from './Sidebar.module.scss';
 
 interface SidebarItem {
@@ -9,10 +9,8 @@ interface SidebarItem {
 
 const sidebarItems: SidebarItem[] = [
   { icon: <Inbox size={18} />, label: 'Inbox' },
-  { icon: <Calendar size={18} />, label: 'Today' },
-  { icon: <Bell size={18} />, label: 'Updates' },
+  { icon: <Bell size={18} />, label: 'Read Later' },
   { icon: <CheckSquare size={18} />, label: 'Tasks' },
-  { icon: <List size={18} />, label: 'Lists' },
 ];
 
 const SidebarSection: React.FC<{ title: string; items: SidebarItem[] }> = ({ title, items }) => (
@@ -56,14 +54,17 @@ const Sidebar: React.FC = () => {
       <div className={styles.sidebarContent}>
         <SidebarSection items={sidebarItems} title="" />
         
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Collections</h3>
-          {collections.map((tag, index) => (
-            <button key={index} className={styles.sidebarItem}>
-              <List size={18} />
-              <span>{tag}</span>
-            </button>
-          ))}
+        <div className={styles.collectionsSection}>
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Collections</h3>
+            <div className={styles.collectionsContainer}>
+            {collections.map((tag, index) => (
+              <button key={index} className={styles.sidebarItem}>
+                <span>{tag}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 

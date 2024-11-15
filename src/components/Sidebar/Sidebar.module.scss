@@ -5,14 +5,19 @@
   background-color: var(--color-background-secondary);
   border-right: 1px solid var(--color-border);
   height: 100%;
-  overflow: hidden;
 }
 
 .sidebarContent {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.collectionsSection {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-4) var(--spacing-2) var(--spacing-16);
-
+  
   // Hide scrollbar for Chrome, Safari and Opera
   &::-webkit-scrollbar {
     display: none;
