@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Inbox, Bell, CheckSquare, Plus } from 'lucide-react';
 import styles from './Sidebar.module.scss';
+import { useNotes } from '@/contexts/NotesContext';
 
 interface SidebarItem {
   icon: React.ReactNode;
@@ -27,6 +28,7 @@ const SidebarSection: React.FC<{ title: string; items: SidebarItem[] }> = ({ tit
 
 const Sidebar: React.FC = () => {
   const [collections, setCollections] = useState<string[]>([]);
+  const { filterByTags, selectedTags, setSelectedTags } = useNotes();
 
   useEffect(() => {
     const fetchTags = async () => {
@@ -40,6 +42,18 @@ const Sidebar: React.FC = () => {
 
     fetchTags();
   }, []);
+
+  const handleTagClick = (tag: string) => {
+    if (selectedTags.includes(tag)) {
+      const newTags = selectedTags.filter(t => t !== tag);
+      setSelectedTags(newTags);
+      filterByTags(newTags);
+    } else {
+      const newTags = [...selectedTags, tag];
+      setSelectedTags(newTags);
+      filterByTags(newTags);
+    }
+  };
 
   const handleNewCollection = () => {
     const name = prompt('Enter collection name:');
@@ -58,9 +72,13 @@ const Sidebar: React.FC = () => {
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Collections</h3>
             <div className={styles.collectionsContainer}>
-            {collections.map((tag, index) => (
-              <button key={index} className={styles.sidebarItem}>
-                <span>{tag}</span>
+              {collections.map((tag, index) => (
+                <button 
+                  key={index} 
+                  className={`${styles.sidebarItem} ${selectedTags.includes(tag) ? styles.selected : ''}`}
+                  onClick={() => handleTagClick(tag)}
+                >
+                  <span>{tag}</span>
                 </button>
               ))}
             </div>
