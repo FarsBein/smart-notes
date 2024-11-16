@@ -16,9 +16,9 @@ interface HighlightPickerProps {
 
 export const highlightOptions = {
     'None': '#3d3d3d',
-    'Highlight': '#FFC300',
-    'Idea': '#2C528C',
-    'Todo': '#FF5733',
+    'Highlight': '#FFD60A', 
+    'Idea': '#0071E3', 
+    'Todo': '#FF453A',
 };
 
 export const HighlightPicker: React.FC<HighlightPickerProps> = ({
