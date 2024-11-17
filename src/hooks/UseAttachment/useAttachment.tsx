@@ -41,7 +41,7 @@ export const useAttachment = () => {
 
 
     const attachmentsComponent = (attachments: string[]) => {
-        return (attachments.length > 0 ? <div className={styles.container}>
+        return (attachments?.length > 0 ? <div className={styles.container}>
             {attachments?.map((attachment, index) => renderAttachment(attachment, index))}
         </div> : null);
     };

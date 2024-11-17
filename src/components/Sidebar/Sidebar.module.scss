@@ -2,7 +2,7 @@
   min-width: 200px;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-background-secondary);
+  background-color: var(--color-background-primary);
   border-right: 1px solid var(--color-border);
   height: 100%;
 }
@@ -54,7 +54,6 @@
   flex: 1;
 
   &:hover {
-    background-color: var(--color-background-tertiary);
     color: var(--color-text-primary);
   }
 
@@ -73,29 +72,22 @@
   bottom: 0;
   left: 0;
   right: 0;
-  padding: var(--spacing-4);
-  background-color: var(--color-background-secondary);
-  border-top: 1px solid var(--color-border);
+  background: transparent;
 }
 
 .newCollectionButton {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: var(--spacing-3);
   width: 100%;
   padding: var(--spacing-3) var(--spacing-4);
-  border: 1px solid var(--color-border);
   background-color: var(--color-background-primary);
   color: var(--color-text-secondary);
   cursor: pointer;
-  border-radius: var(--border-radius-lg);
   transition: all 0.2s ease;
-
+  border: none;
   &:hover {
-    background-color: var(--color-background-tertiary);
     color: var(--color-text-primary);
-    border-color: var(--color-text-secondary);
   }
 
   span {
@@ -132,4 +124,17 @@
       opacity: 1;
     }
   }
+}
+
+.tagCircle {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: var(--spacing-2);
+  flex-shrink: 0;
+}
+
+.tagLabel {
+  display: flex;
+  align-items: center;
 } 
