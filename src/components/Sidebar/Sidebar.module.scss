@@ -1,9 +1,9 @@
 .sidebar {
-  min-width: 200px;
+  min-width: 150px;
   display: flex;
   flex-direction: column;
   background-color: var(--color-background-primary);
-  border-right: 1px solid var(--color-border);
+  // border-right: 1px solid var(--color-border);
   height: 100%;
 }
 

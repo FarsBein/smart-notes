@@ -334,7 +334,6 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
 
         </div>
       </div>
-      <div style={{ height: 'var(--spacing-4)' }}></div>
       {isReplying && (
         <div className={styles.container}>
 
@@ -370,7 +369,6 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({ fileName, fileContent, f
 
         </div>
       )}
-      <div style={{ height: 'var(--spacing-4)' }}></div>
     </>
   );
 });

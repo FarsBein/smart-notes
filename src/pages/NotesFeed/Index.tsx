@@ -78,7 +78,7 @@ const NotesList: React.FC = () => {
         }
 
         return (
-          <React.Fragment key={fileName}>
+          <div className={styles.noteContainer} key={fileName}>
             <NoteItem
               key={fileName}
               fileName={fileName}
@@ -103,8 +103,8 @@ const NotesList: React.FC = () => {
                 />
               );
             })}
-            <div style={{ height: 'var(--spacing-4)' }}></div>
-          </React.Fragment>
+            {/* <div className={styles.noteDivider}></div> */}
+          </div>
         );
       })}
       <BottomBar scrollToTop={scrollToTop} />
