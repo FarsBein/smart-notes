@@ -1,17 +1,47 @@
-import React, { ChangeEvent, useState, KeyboardEvent } from 'react';
+import React, { ChangeEvent, useState, KeyboardEvent, useEffect } from 'react';
 import { Image, Code, Quote, MessageCircle } from 'lucide-react';
 import SearchDropdown from './SearchDropdown';
 import { usePopupContext } from '../../contexts/PopupContext';
 import styles from './PromptWindow.module.scss';
+import { TagInput } from '@/components/TagInput/TagInput';
 
 interface FooterProps {
   handleEditorSave: () => void;
 }
 
+interface Option {
+  value: string;
+  label: string;
+}
+
 const Footer: React.FC<FooterProps> = ({ handleEditorSave }) => {
-  const {  handleCancel, setAttachments, attachments, saveStatus, handleThread, tagInput, setTagInput } = usePopupContext();
-  
- 
+  const {  handleCancel, setAttachments, attachments, saveStatus, handleThread, setTagInput } = usePopupContext(); 
+  const [tagOptions, setTagOptions] = useState<Option[]>([
+    { value: '#cool', label: '#cool' },
+    { value: '#awesome', label: '#awesome' },
+  ]);
+  const [selectedTags, setSelectedTags] = useState<Option[]>([]);
+
+  useEffect(() => {
+    const getIndexTags = async () => {
+      const options = await window.electron.ipcRenderer.invoke('get-indexed-tags');
+      const optionsWithLabels = options.map((option: string) => ({ value: option, label: option }));
+      setTagOptions(optionsWithLabels);
+    };
+    getIndexTags();
+  }, []);
+
+  useEffect(() => {
+    setTagInput(selectedTags.map(tag => {
+      if (!tag.value.startsWith('#')) {
+        const word = tag.value.trim();
+        return '#' + word;
+      } else {
+        return tag.value;
+      }
+    }).join(' '));
+  }, [selectedTags]);
+
   const handleTagInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value.endsWith(' ')) {
@@ -78,21 +108,11 @@ const Footer: React.FC<FooterProps> = ({ handleEditorSave }) => {
     }
   };
 
-  
-
   return (
     <div className={styles['popup__footer']}>
       <div className={styles['popup__left-container']}>
-        <SearchDropdown />
-        <input
-          className={styles['popup__tag-input']}
-          type="text"
-          placeholder="#"
-          value={tagInput}
-          onChange={handleTagInputChange}
-          // @ts-ignore
-          onKeyDown={handleKeyDown}
-        />
+        {/* <SearchDropdown /> */}
+        <TagInput value={selectedTags} onChange={setSelectedTags} options={tagOptions} placeholder="#" />
       </div>
       
       <div className={styles['popup__buttons']}>

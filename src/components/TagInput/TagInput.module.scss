@@ -1,0 +1,101 @@
+.tagInput {
+  :global {
+    .react-select__control {
+      min-height: 38px;
+      min-width: 100px;
+      border: none;
+      background: transparent;
+      box-shadow: none;
+
+      
+      &:hover {
+        border: none;
+        box-shadow: none;
+      }
+
+      // Remove dropdown indicator
+      .react-select__dropdown-indicator {
+        display: none;
+      }
+    }
+
+    .react-select__value-container {
+      padding: var(--spacing-1) var(--spacing-2);
+    }
+
+    .react-select__multi-value {
+      background-color: var(--color-background-secondary);
+      border-radius: var(--border-radius-sm);
+      margin: var(--spacing-1);
+      
+      &__label {
+        padding: var(--spacing-1) var(--spacing-2);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+      }
+      
+      &__remove {
+        padding: 0 var(--spacing-1);
+        color: var(--color-text-secondary);
+        
+        &:hover {
+          background-color: var(--color-background-tertiary);
+          color: var(--color-text-primary);
+        }
+      }
+    }
+
+    .react-select__input-container {
+      margin: 0;
+      padding: 0;
+      color: var(--color-text-primary);
+    }
+
+    .react-select__menu {
+      margin-top: var(--spacing-2);
+      background-color: var(--color-background-primary);
+      border-radius: var(--border-radius-md);
+      min-width: 200px;
+      width: max-content;
+      max-width: 400px;
+      border: 1px solid var(--color-border);
+    }
+
+    .react-select__menu-list {
+      padding: var(--spacing-1);
+    }
+
+    .react-select__option {
+      padding: var(--spacing-1) var(--spacing-2);
+      color: var(--color-text-primary);
+      border-radius: var(--border-radius-sm);
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      
+      &--is-focused {
+        background-color: var(--color-background-secondary);
+      }
+      
+      &--is-selected {
+        background-color: var(--color-background-tertiary);
+        color: var(--color-text-primary);
+        font-weight: var(--font-weight-medium);
+      }
+    }
+
+    // Style for the "create new" option
+    .react-select__option.react-select__create-option {
+      color: var(--color-accent);
+      
+      &.react-select__option--is-focused {
+        background-color: var(--color-background-tertiary);
+      }
+    }
+
+    .react-select__placeholder {
+      color: var(--color-text-tertiary);
+    }
+  }
+}
