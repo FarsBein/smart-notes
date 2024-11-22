@@ -1,6 +1,14 @@
-# Your Personal Knowledge Hub
+# My WorkingMemory.md you could say
 
 A desktop app I built to manage my notes and knowledge. It's built with Electron and includes some cool features like AI embeddings and a Chrome extension for quick capture of web content.
+
+![capture and retireval v3](https://github.com/user-attachments/assets/f76ed6a0-439d-4d04-8321-c456408bfde8)
+
+Quick capture window (CTRL + SHIFT + N)
+
+
+![image](https://github.com/user-attachments/assets/7876ad0b-5bed-41cd-9f3a-3a2b3ec37186)
+
 
 ## Key Features
 
@@ -67,13 +75,8 @@ On first launch, you'll need to configure:
 - Safe external link handling
 - Content Security Policy enforcement
 
-## License
 
-MIT License - feel free to use and modify as needed.
-
----
-
-## Development Notes
+## Notes for Future me
 
 ### Boilerplate
 Based on https://rdarida.medium.com/electron-react-the-boilerplate-fc3a7d9b9ec1
