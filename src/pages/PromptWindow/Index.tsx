@@ -1,16 +1,16 @@
 import React, { DragEvent, useRef, useState, useEffect } from 'react';
 
 import { PopupProvider, usePopupContext } from '../../contexts/PopupContext';
-import Header from './Header';
 import AttachmentList from './AttachmentList';
 import Footer from './Footer';
 import { Check, Loader2 } from 'lucide-react';
 import styles from './PromptWindow.module.scss';
 import NoteItem from '../../components/NoteItem/NoteItem';
 import { Editor, EditorRef } from '@/components/PopupEditor/Editor';
+import { HighlightPicker } from '@/components/HighlightPicker/HighlightPicker';
 
 const PopupContent: React.FC = () => {
-  const { attachments, setAttachments, isSaving, saveStatus, handleClipboard, thread, note, setNote, handleSave } = usePopupContext();
+  const { attachments, setAttachments, isSaving, saveStatus, handleClipboard, thread, note, setNote, handleSave, selectedHighlight, setSelectedHighlight } = usePopupContext();
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -64,7 +64,6 @@ const PopupContent: React.FC = () => {
         </div> :
 
         <div className={styles['popup']} onDrop={handleDrop} onDragOver={handleDragOver}>
-          <Header />
           <div className={styles['popup__thread']}>
             {thread.map(({ fileName, metadata, content }) => (
               metadata && content && <NoteItem key={fileName} fileName={fileName} fileContent={content} fileMetadata={metadata} isLast={false} />
@@ -72,7 +71,8 @@ const PopupContent: React.FC = () => {
             {thread.length > 0 && <div style={{ marginTop: 'var(--spacing-5)' }}></div>}
           </div>
           <div className={styles['popup__editor']}>
-            <Editor
+            <div className={styles['popup__editor-container']}>
+              <Editor
               ref={editorRef}
               content={note}
               onSave={handleEditorSave}
@@ -81,7 +81,12 @@ const PopupContent: React.FC = () => {
               onClipboard={handleClipboard}
               placeholder="Capture your thoughts here…"
               autoFocus={true}
-            />
+              />
+              <HighlightPicker
+                selectedHighlight={selectedHighlight}
+                setSelectedHighlight={setSelectedHighlight}
+              />
+            </div>
             <AttachmentList attachments={attachments} setAttachments={setAttachments} />
             <Footer handleEditorSave={handleEditorSave} />
           </div>
